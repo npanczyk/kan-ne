@@ -60,11 +60,11 @@ def get_chf(synthetic=False):
     return dataset
 
 
-def get_mitr(test_split=0.3):
+def get_mitr(test_split=0.3, random_state=42):
     features_df = pd.read_csv('datasets/crx.csv')
     outputs_df = pd.read_csv('datasets/powery.csv')
     x_train, x_test, y_train, y_test = train_test_split(
-    features_df, outputs_df, test_size=0.3, random_state=42)
+    features_df, outputs_df, test_size=0.3, random_state=random_state)
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
@@ -78,7 +78,7 @@ def get_mitr(test_split=0.3):
     train_input = torch.tensor(X_train, dtype=torch.double)
     train_label = torch.tensor(Y_train, dtype=torch.double)
     test_input = torch.tensor(X_test, dtype=torch.double)
-    test_label = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+    test_label = torch.tensor(Y_test, dtype=torch.double)
 
     # Creating the dataset dictionary
     dataset = {
@@ -90,6 +90,26 @@ def get_mitr(test_split=0.3):
     return dataset
 
 def get_xs(test_split=0.3, random_state=42):
+    """Gets reactor physics data ready for KAN.
+    Features (cross sections): 
+    - ``FissionFast``: fast fission,
+    - ``CaptureFast``: fast capture,
+    - ``FissionThermal``: thermal fission,
+    - ``CaptureThermal``: thermal capture,
+    - ``Scatter12``: group 1 to 2 scattering,
+    - ``Scatter11``: group 1 to 1 scattering,
+    - ``Scatter21``: group 2 to 1 scattering,
+    - ``Scatter22``: group 2 to 2 scattering,
+    Outputs:
+    - k: criticality
+
+    Args:
+        test_split (float, optional): Ratio of test to training. Defaults to 0.3.
+        random_state (int, optional): Random state to make reproducible results when shuffling the data. Defaults to 42.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
     features_df = pd.read_csv('datasets/xs.csv').iloc[:,[0,1,2,3,4,5,6,7]]
     outputs_df = pd.read_csv('datasets/xs.csv').iloc[:, [8]]
     x_train, x_test, y_train, y_test = train_test_split(
@@ -118,8 +138,69 @@ def get_xs(test_split=0.3, random_state=42):
     }
     return dataset
 
+def get_fp(test_split=0.3, random_state=42):
+    """
+    Gets fuel performance data ready for KAN.
 
-dataset = get_xs()
+    Features:
+     - ``fuel_dens``: fuel density :math:`[kg/m^3]`,
+    - ``porosity``: porosity,
+    - ``clad_thick``: cladding thickness :math:`[m]`,
+    - ``pellet_OD``: pellet outer diameter :math:`[m]`,
+    - ``pellet_h``: pellet height :math:`[m]`,
+    - ``gap_thickness``: gap thickness :math:`[m]`,
+    - ``inlet_T``: inlet temperature :math:`[K]`,
+    - ``enrich``: U-235 enrichment,
+    - ``rough_fuel``: fuel roughness :math:`[m]`,
+    - ``rough_clad``: cladding roughness :math:`[m]`,
+    - ``ax_pow``: axial power,
+    - ``clad_T``: cladding surface temperature :math:`[K]`,
+    - ``pressure``: pressure :math:`[Pa]`,
+
+    Outputs:
+
+    - ``fis_gas_produced``: fission gas production :math:`[mol]`,
+    - ``max_fuel_centerline_temp``: max fuel centerline temperature :math:`[K]`,
+    - ``max_fuel_surface_temperature``: max fuel surface temperature :math:`[K]`,
+    - ``radial_clad_dia``: radial cladding diameter displacement after
+      irradiation :math:`[m]`,
+
+    Args:
+        test_split (float, optional): Test to train ratio. Defaults to 0.3.
+        random_state (int, optional): Makes shuffling reproducible. Defaults to 42.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
+    features_df = pd.read_csv('datasets/fp_inp.csv')
+    outputs_df = pd.read_csv('datasets/fp_out.csv')
+    x_train, x_test, y_train, y_test = train_test_split(
+    features_df, outputs_df, test_size=0.3, random_state=42)
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double)
+    train_label = torch.tensor(Y_train, dtype=torch.double)
+    test_input = torch.tensor(X_test, dtype=torch.double)
+    test_label = torch.tensor(Y_test, dtype=torch.double)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_label': train_label,
+        'test_input': test_input,
+        'test_label': test_label
+    }
+    return dataset
+
+dataset = get_fp()
 print( dataset['train_input'] )
 print( len(dataset['train_input']) )
 print( len(dataset['test_input']) )
