@@ -89,3 +89,37 @@ def get_mitr(test_split=0.3):
     }
     return dataset
 
+def get_xs(test_split=0.3, random_state=42):
+    features_df = pd.read_csv('datasets/xs.csv').iloc[:,[0,1,2,3,4,5,6,7]]
+    outputs_df = pd.read_csv('datasets/xs.csv').iloc[:, [8]]
+    x_train, x_test, y_train, y_test = train_test_split(
+    features_df, outputs_df, test_size=0.3, random_state=random_state)
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double)
+    train_label = torch.tensor(Y_train, dtype=torch.double)
+    test_input = torch.tensor(X_test, dtype=torch.double)
+    test_label = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_label': train_label,
+        'test_input': test_input,
+        'test_label': test_label
+    }
+    return dataset
+
+
+dataset = get_xs()
+print( dataset['train_input'] )
+print( len(dataset['train_input']) )
+print( len(dataset['test_input']) )
