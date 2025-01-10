@@ -25,6 +25,25 @@ import torch
 
 
 def get_chf(synthetic=False):
+    """
+    Gets data for CHF prediction.
+
+    Features:
+    - ``D (m)``: Diameter of the test section (:math:`0.002 - 0.016~m`),
+    - ``L (m)``: Heated length (:math:`0.07 - 15.0~m`),
+    - ``P (kPa)``: Pressure (:math:`100-20000~kPa`),
+    - ``G (kg m-2s-1)``: Mass flux (:math:`17.7-7712.0~\\frac{kg}{m^2\\cdot s}`),
+    - ``Tin (C)``: Inlet temperature length (:math:`9.0-353.62^\\circ C`),
+    - ``Xe (-)``: Outlet equilibrium quality (:math:`-0.445-0.986`),
+
+    Output:
+    - ``CHF (kW m-2)``: Critical heat flux (:math:`130.0-13345.0~\\frac{kW}{m^2}`).
+    Args:
+        synthetic (bool, optional): Whether to use synthetic or real CHF data. Defaults to False.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
     if synthetic==False:
         train_df = pd.read_csv('datasets/chf_train.csv')
         test_df = pd.read_csv('datasets/chf_valid.csv')
@@ -61,6 +80,15 @@ def get_chf(synthetic=False):
 
 
 def get_mitr(test_split=0.3, random_state=42):
+    """Gets MIT microreactor data. Six features and 22 outputs.
+
+    Args:
+        test_split (float, optional): Ratio of test to training set. Defaults to 0.3.
+        random_state (int, optional): Random state to allow for reproducible shuffling. Defaults to 42.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
     features_df = pd.read_csv('datasets/crx.csv')
     outputs_df = pd.read_csv('datasets/powery.csv')
     x_train, x_test, y_train, y_test = train_test_split(
@@ -200,7 +228,55 @@ def get_fp(test_split=0.3, random_state=42):
     }
     return dataset
 
-dataset = get_fp()
+def get_heat(test_split=0.3, random_state=42):
+    """Gets heat conduction data:
+    Features:
+     - ``qprime``: linear heat generation rate :math:`[W/m]`,
+    - ``mdot``: mass flow rate :math:`[g/s]`,
+    - ``Tin``: temperature of the fuel boundary :math:`[K]`,
+    - ``R``: fuel radius :math:`[m]`,
+    - ``L``: fuel length :math:`[m]`,
+    - ``Cp``: heat capacity :math:`[J/(g\\cdot K)]`,
+    - ``k``: thermal conductivity :math:`[W/(m\\cdot K)]`,
+    Outputs:
+    - ``T``: fuel centerline temperature :math:`[K]`
+
+    Args:
+        test_split (float, optional): Ratio of test to train data. Defaults to 0.3.
+        random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
+
+    Returns:
+        _type_: _description_
+    """
+    features_df = pd.read_csv('datasets/heat.csv').iloc[:,[0,1,2,3,4,5,6]]
+    outputs_df = pd.read_csv('datasets/heat.csv').iloc[:, [7]]
+    x_train, x_test, y_train, y_test = train_test_split(
+    features_df, outputs_df, test_size=0.3, random_state=random_state)
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double)
+    train_label = torch.tensor(Y_train, dtype=torch.double)
+    test_input = torch.tensor(X_test, dtype=torch.double)
+    test_label = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_label': train_label,
+        'test_input': test_input,
+        'test_label': test_label
+    }
+    return dataset
+
+dataset = get_heat()
 print( dataset['train_input'] )
 print( len(dataset['train_input']) )
 print( len(dataset['test_input']) )
