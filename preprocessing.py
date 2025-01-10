@@ -6,6 +6,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+import torch
 
 # putting this on the backburner for now
 '''class data:
@@ -22,13 +24,17 @@ from sklearn.model_selection import train_test_split
             df = pd.read_csv(filepath)'''
 
 
-def get_chf():
-    train_df = pd.read_csv('datasets/chf_train.csv')
-    test_df = pd.read_csv('datasets/chf_valid.csv')
-    x_train = train_data.iloc[:, [0, 1, 2, 3, 4, 5]].values  # Input columns (1-6) D, L, P, G, T, Xe
-    y_train = train_data.iloc[:, [6]].values  # CHF
-    x_test = test_data.iloc[:, [0, 1, 2, 3, 4, 5]].values  
-    y_test = test_data.iloc[:, [6]].values
+def get_chf(synthetic=False):
+    if synthetic==False:
+        train_df = pd.read_csv('datasets/chf_train.csv')
+        test_df = pd.read_csv('datasets/chf_valid.csv')
+    else:
+        train_df = pd.read_csv('datasets/chf_train_synth.csv')
+        test_df = pd.read_csv('datasets/chf_test_synth.csv')
+    x_train = train_df.iloc[:, [0, 1, 2, 3, 4, 5]].values  # Input columns (1-6) D, L, P, G, T, Xe
+    y_train = train_df.iloc[:, [6]].values  # CHF
+    x_test = test_df.iloc[:, [0, 1, 2, 3, 4, 5]].values  
+    y_test = test_df.iloc[:, [6]].values
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
@@ -55,4 +61,5 @@ def get_chf():
 
 
 
-
+dataset = get_chf()
+print( dataset['train_input'] )
