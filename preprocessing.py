@@ -326,7 +326,73 @@ def get_rea(test_split=0.3, random_state=42):
     }
     return dataset
 
-dataset = get_rea()
+def get_bwr(test_split=0.3, random_state=42):
+    """Gets BWR data.
+
+    Features:
+    - ``PSZ``: Fuel bundle region Power Shaping Zone (PSZ),
+    - ``DOM``:  Fuel bundle region Dominant zone (DOM),
+    - ``vanA``: Fuel bundle region vanishing zone A (VANA),
+    - ``vanB``: Fuel bundle region vanishing zone B (VANB),
+    - ``subcool``: Represents moderator inlet conditions. Core inlet subcooling
+      is interpreted to be at the steam dome pressure (i.e., not core-averaged
+      pressure). The input value for subcooling will automatically be increased
+      to account for this fact. (Btu/lb),
+    - ``CRD``: Defines the position of all control rod groups (banks),
+    - ``flow_rate``: Defines essential global design data for rated coolant mass
+      flux for the active core, :math:`\\frac{kg}{(cm^{2}-hr)}`. Coolant   mass
+      flux equals active core flow divided by core cross-section area. The core
+      cross-section area is DXA 2 times the number of assemblies,
+    - ``power_density``: Defines essential global design data for rated power
+      density using cold dimensions, :math:`(\\frac{kw}{liter})`,
+    - ``VFNGAP``: Defines the ratio of narrow water gap width to the sum of the
+      narrow and wide water gap widths,
+
+    Outputs:
+    - ``K-eff``:  Reactivity coefficient k-effective, the effective neutron
+      multiplication factor,
+    - ``Max3Pin``: Maximum planar-averaged pin power peaking factor,
+    - ``Max4Pin``: maximum pin-power peaking factor, :math:`F_{q}`, (which includes
+      axial intranodal peaking),
+    - ``F-delta-H``: Ratio of max-to-average enthalpy rise in a channel,
+    - ``Max-Fxy``: Maximum radial pin-power peaking factor,
+
+    Args:
+        test_split (float, optional): Ratio of test to train data. Defaults to 0.3.
+        random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
+    features_df = pd.read_csv('datasets/bwr_input.csv')
+    outputs_df = pd.read_csv('datasets/bwr_output.csv')
+    x_train, x_test, y_train, y_test = train_test_split(
+    features_df, outputs_df, test_size=0.3, random_state=random_state)
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double)
+    train_label = torch.tensor(Y_train, dtype=torch.double)
+    test_input = torch.tensor(X_test, dtype=torch.double)
+    test_label = torch.tensor(Y_test, dtype=torch.double)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_label': train_label,
+        'test_input': test_input,
+        'test_label': test_label
+    }
+    return dataset
+
+dataset = get_bwr()
 print( dataset['train_input'] )
 print( len(dataset['train_input']) )
 print( len(dataset['test_input']) )
