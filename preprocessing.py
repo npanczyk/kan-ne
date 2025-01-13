@@ -246,7 +246,7 @@ def get_heat(test_split=0.3, random_state=42):
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        _type_: _description_
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
     """
     features_df = pd.read_csv('datasets/heat.csv').iloc[:,[0,1,2,3,4,5,6]]
     outputs_df = pd.read_csv('datasets/heat.csv').iloc[:, [7]]
@@ -276,7 +276,57 @@ def get_heat(test_split=0.3, random_state=42):
     }
     return dataset
 
-dataset = get_heat()
+def get_rea(test_split=0.3, random_state=42):
+    """Gets rod ejection accident (REA) data.
+
+    Features:
+    - ``rod_worth``: reactivity worth of the ejected rod,
+    - ``beta``: delayed neutron fraction,
+    - ``h_gap``: gap conductance :math:`[W/(m^2\\cdot K)]`,
+    - ``gamma_frac``: direct heating fraction
+
+    Outputs:
+    - ``max_power``: peak power reached during transient :math:`[\\%FP]`,
+    - ``burst_width``: Width of power burst :math:`[s]`,
+    - ``max_TF``: max fuel centerline temperature :math:`[K]`,
+    - ``avg_Tcool``: average coolant outlet temperature :math:`[K]`.
+
+    Args:
+        test_split (float, optional): Ratio of test to train data. Defaults to 0.3.
+        random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
+
+    Returns:
+        dict: a dictionary containing four PyTorch tensors (train_input, train_label, test_input, test_label)
+    """
+    features_df = pd.read_csv('datasets/rea_inputs.csv')
+    outputs_df = pd.read_csv('datasets/rea_outputs.csv')
+    x_train, x_test, y_train, y_test = train_test_split(
+    features_df, outputs_df, test_size=0.3, random_state=random_state)
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double)
+    train_label = torch.tensor(Y_train, dtype=torch.double)
+    test_input = torch.tensor(X_test, dtype=torch.double)
+    test_label = torch.tensor(Y_test, dtype=torch.double)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_label': train_label,
+        'test_input': test_input,
+        'test_label': test_label
+    }
+    return dataset
+
+dataset = get_rea()
 print( dataset['train_input'] )
 print( len(dataset['train_input']) )
 print( len(dataset['test_input']) )
