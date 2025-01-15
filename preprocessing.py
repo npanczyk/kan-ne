@@ -42,7 +42,7 @@ def get_chf(synthetic=False):
         synthetic (bool, optional): Whether to use synthetic or real CHF data. Defaults to False.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels
     """
     if synthetic==False:
         train_df = pd.read_csv('datasets/chf_train.csv')
@@ -76,7 +76,8 @@ def get_chf(synthetic=False):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['D', 'L', 'P', 'G', 'Tin', 'Xe'],
-        'output_labels': ['CHF']
+        'output_labels': ['CHF'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -89,7 +90,7 @@ def get_mitr(test_split=0.3, random_state=42):
         random_state (int, optional): Random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/crx.csv')
     outputs_df = pd.read_csv('datasets/powery.csv')
@@ -117,7 +118,8 @@ def get_mitr(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-        'output_labels': ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
+        'output_labels': ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -140,7 +142,7 @@ def get_xs(test_split=0.3, random_state=42):
         random_state (int, optional): Random state to make reproducible results when shuffling the data. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/xs.csv').iloc[:,[0,1,2,3,4,5,6,7]]
     outputs_df = pd.read_csv('datasets/xs.csv').iloc[:, [8]]
@@ -168,7 +170,8 @@ def get_xs(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['FissionFast', 'CaptureFast', 'FissionThermal', 'CaptureThermal', 'Scatter12', 'Scatter11', 'Scatter21', 'Scatter22'],
-        'output_labels': ['k']
+        'output_labels': ['k'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -204,7 +207,7 @@ def get_fp(test_split=0.3, random_state=42):
         random_state (int, optional): Makes shuffling reproducible. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/fp_inp.csv')
     outputs_df = pd.read_csv('datasets/fp_out.csv')
@@ -232,7 +235,8 @@ def get_fp(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['fuel_dens', 'porosity', 'clad_thick', 'pellet_OD', 'pellet_h', 'gap_thickness', 'inlet_T', 'enrich', 'rough_fuel', 'rough_clad', 'ax_pow', 'clad_T', 'pressure'],
-        'output_labels': ['fission_gas', 'max_fuel_cl_T', 'max_fuel_surf_T', 'radial_clad_T']
+        'output_labels': ['fission_gas', 'max_fuel_cl_T', 'max_fuel_surf_T', 'radial_clad_T'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -254,7 +258,7 @@ def get_heat(test_split=0.3, random_state=42):
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/heat.csv').iloc[:,[0,1,2,3,4,5,6]]
     outputs_df = pd.read_csv('datasets/heat.csv').iloc[:, [7]]
@@ -282,7 +286,8 @@ def get_heat(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['qprime', 'mdot', 'Tin', 'R', 'L', 'Cp', 'k'],
-        'output_labels': ['T']
+        'output_labels': ['T'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -306,7 +311,7 @@ def get_rea(test_split=0.3, random_state=42):
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/rea_inputs.csv')
     outputs_df = pd.read_csv('datasets/rea_outputs.csv')
@@ -334,7 +339,8 @@ def get_rea(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['rod_worth', 'beta', 'h_gap', 'gamma_frac'],
-        'output_labels': ['max_power', 'burst_width', 'max_TF', 'avg_Tcool']
+        'output_labels': ['max_power', 'burst_width', 'max_TF', 'avg_Tcool'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -374,7 +380,7 @@ def get_bwr(test_split=0.3, random_state=42):
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/bwr_input.csv')
     outputs_df = pd.read_csv('datasets/bwr_output.csv')
@@ -402,7 +408,8 @@ def get_bwr(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['PSZ', 'DOM', 'vanA', 'vanB', 'subcool', 'CRD', 'flow_rate', 'power_density', 'VFNGAP'],
-        'output_labels': ['K-eff', 'Max3Pin', 'Max4Pin', 'F-delta-H', 'Max-Fxy']
+        'output_labels': ['K-eff', 'Max3Pin', 'Max4Pin', 'F-delta-H', 'Max-Fxy'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
@@ -429,7 +436,7 @@ def get_htgr(test_split=0.3, random_state=42):
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
 
     Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
+        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     features_df = pd.read_csv('datasets/microreactor.csv').iloc[:,[29,30,31,32,33,34,35,36]]
     outputs_df = pd.read_csv('datasets/microreactor.csv').iloc[:, [4,5,6,7]]
@@ -457,7 +464,8 @@ def get_htgr(test_split=0.3, random_state=42):
         'test_input': test_input,
         'test_output': test_output,
         'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
-        'output_labels': ['FluxQ1', 'FluxQ2', 'FluxQ3', 'FluxQ4']
+        'output_labels': ['FluxQ1', 'FluxQ2', 'FluxQ3', 'FluxQ4'],
+        'y_scaler': scaler_Y
     }
     return dataset
 
