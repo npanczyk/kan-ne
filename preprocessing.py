@@ -67,7 +67,7 @@ def get_chf(synthetic=False):
     train_input = torch.tensor(X_train, dtype=torch.double)
     train_output = torch.tensor(Y_train, dtype=torch.double)
     test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+    test_output = torch.tensor(Y_test, dtype=torch.double)
 
     # Creating the dataset dictionary
     dataset = {
