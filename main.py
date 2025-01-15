@@ -12,6 +12,7 @@ from kan.utils import ex_round
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
 from preprocessing import get_chf
+from accessories import rmspe, mape
 
 
 class NKAN:
@@ -40,6 +41,11 @@ class NKAN:
         self.grid = grid
 
     def get_model(self):
+        """Uses input dataset to train and return a KAN model (without tuning).
+
+        Returns:
+            pykan KAN model object: model trained on dataset provided to class
+        """
         width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
         print(width)
         model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
@@ -51,10 +57,31 @@ class NKAN:
         }
         model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
         print("Model trained.")
-        return
+        return model
 
-    def get_metrics():
-        return
+    def get_metrics(self, model):
+        # get predictions and unscale data
+        scaler = self.dataset['y_scaler']
+        X_test = self.dataset['test_input'] # still scaled
+        Y_test = self.dataset['test_output'] # still scaled
+        Y_pred = model(X_test)
+        print( Y_pred.shape, Y_test.shape)
+        y_test = scaler.inverse_transform(Y_test.detach().numpy())
+        y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
+        output_metrics = {}
+        for i, output in enumerate(self.dataset['output_labels']):
+            yi_test = y_test[:,i]
+            yi_pred = y_pred[:,i]
+            metrics = {
+            'MAE': mean_absolute_error(yi_test, yi_pred),
+            'MAPE': mape(yi_test, yi_pred),
+            'MSE': mean_squared_error(yi_test, yi_pred),
+            'RMSE': np.sqrt(mean_squared_error(yi_test, yi_pred)),
+            'RMSPE':rmspe(yi_test, yi_pred),
+            'R2':r2_score(yi_test, yi_pred)
+            }
+            output_metrics[output] = metrics
+        return output_metrics
 
     def get_schematic():
         return 
@@ -69,4 +96,6 @@ if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
-    test_kan.get_model()
+    model = test_kan.get_model()
+    metrics = test_kan.get_metrics(model)
+    print( metrics['CHF'] )
