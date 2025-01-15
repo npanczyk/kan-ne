@@ -461,6 +461,7 @@ def get_htgr(test_split=0.3, random_state=42):
     }
     return dataset
 
-dataset = get_htgr()
-print(dataset['train_input'])
-print(dataset['feature_labels'])
+'''dataset = get_chf()
+hidden_nodes = dataset['train_input'].shape[1]
+print( hidden_nodes )
+print( type(hidden_nodes) )'''
