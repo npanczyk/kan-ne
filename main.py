@@ -13,6 +13,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
 from preprocessing import get_chf
 from accessories import rmspe, mape
+from plotting import plot_feature_importances
 
 
 class NKAN:
@@ -40,7 +41,7 @@ class NKAN:
         self.k = k
         self.grid = grid
 
-    def get_model(self):
+    def get_model(self, test=False):
         """Uses input dataset to train and return a KAN model (without tuning).
 
         Returns:
@@ -49,23 +50,40 @@ class NKAN:
         width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
         print(width)
         model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
-        data = {
-            'train_input':self.dataset['train_input'],
-            'train_label':self.dataset['train_output'],
-            'test_input':self.dataset['test_input'],
-            'test_label':self.dataset['test_output']
+        # DELETE CONDITIONAL AFTER TESTING
+        if test:
+            data = {
+            'train_input':self.dataset['train_input'][0:50],
+            'train_label':self.dataset['train_output'][0:50],
+            'test_input':self.dataset['test_input'][0:50],
+            'test_label':self.dataset['test_output'][0:50]
         }
+        else:
+            data = {
+                'train_input':self.dataset['train_input'],
+                'train_label':self.dataset['train_output'],
+                'test_input':self.dataset['test_input'],
+                'test_label':self.dataset['test_output']
+            }
         model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
         print("Model trained.")
         return model
 
     def get_metrics(self, model, save_as):
+        """Gets a variety of metrics for each output of the given KAN model evaluated against the test set in dataset.
+
+        Args:
+            model (pykan model object): KAN model generated for dataset
+            save_as (str): name of csv file to save metrics to
+
+        Returns:
+            pandas DataFrame: dataframe containing metrics for each output
+        """
         # get predictions and unscale data
         scaler = self.dataset['y_scaler']
         X_test = self.dataset['test_input'] # still scaled
         Y_test = self.dataset['test_output'] # still scaled
         Y_pred = model(X_test)
-        print( Y_pred.shape, Y_test.shape)
         y_test = scaler.inverse_transform(Y_test.detach().numpy())
         y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
         metrics = {
@@ -100,8 +118,23 @@ class NKAN:
     def get_equation(model, output_label):
         return
 
-    def get_importances():
-        return
+    def get_importances(self, model, save_as):
+        """Uses pykan built-in feature importance functionality to rank features from a given model and plot their importances. 
+
+        Args:
+            model (pykan model object): KAN model created from dataset
+            save_as (str): string to save feature importance plot as
+
+        Returns:
+            _type_: _description_
+        """
+        importances = model.feature_score
+        importances = importances.detach().numpy()
+        fig = plot_feature_importances(importances, self.dataset['feature_labels'])
+        if not os.path.exists('figures'):
+            os.makedirs('figures')
+        fig.savefig(f'figures/{save_as}.png', dpi=300)
+        return importances
 
 if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -109,4 +142,4 @@ if __name__=="__main__":
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
     model = test_kan.get_model()
     metrics = test_kan.get_metrics(model, 'chf_test')
-    print( metrics )
+    importances = test_kan.get_importances(model, 'chf_FI_test')
