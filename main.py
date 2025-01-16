@@ -67,6 +67,9 @@ class NKAN:
             }
         model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
         print("Model trained.")
+        model = model.prune()
+        model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
+        print("Model pruned and re-trained.")
         return model
 
     def get_metrics(self, model, save_as):
@@ -126,7 +129,7 @@ class NKAN:
             save_as (str): string to save feature importance plot as
 
         Returns:
-            _type_: _description_
+            pytorch tensor: feature importances in order of original dataset
         """
         importances = model.feature_score
         importances = importances.detach().numpy()
@@ -141,5 +144,5 @@ if __name__=="__main__":
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
     model = test_kan.get_model()
-    metrics = test_kan.get_metrics(model, 'chf_test')
+    metrics = test_kan.get_metrics(model, 'chf_pruned_test')
     importances = test_kan.get_importances(model, 'chf_FI_test')
