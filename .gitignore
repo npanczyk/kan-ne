@@ -173,4 +173,5 @@ datasets/chf_valid.csv
 model/
 figures/
 results/
+equations/
 scratch.ipynb

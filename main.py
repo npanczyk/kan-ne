@@ -118,8 +118,20 @@ class NKAN:
     def get_schematic():
         return 
 
-    def get_equation(model, output_label):
-        return
+    def get_equation(self, model, save_as, lib=None):
+        # remove lib after testing (here now to make things faster)
+        lib = ['x','x^2','x^3','x^4','exp','log','sqrt','tanh','sin','tan','abs']
+        model.auto_symbolic(lib=lib)
+        if not os.path.exists('equations'):
+            os.makedirs('equations')
+        f = open(f"equations/{save_as}_equation.txt", "w")
+        for i, output in enumerate(self.dataset['output_labels']):
+            formula = model.symbolic_formula()[0][i]
+            clean_formula = ex_round(formula, 4)
+            f.write(f"{output} = {clean_formula}")
+            f.write("\n")
+        f.close()
+        return 
 
     def get_importances(self, model, save_as):
         """Uses pykan built-in feature importance functionality to rank features from a given model and plot their importances. 
@@ -143,6 +155,7 @@ if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
-    model = test_kan.get_model()
-    metrics = test_kan.get_metrics(model, 'chf_pruned_test')
-    importances = test_kan.get_importances(model, 'chf_FI_test')
+    model = test_kan.get_model(test=False)
+    equation = test_kan.get_equation(model, 'chf_test')
+    #metrics = test_kan.get_metrics(model, 'chf_pruned_test')
+    #importances = test_kan.get_importances(model, 'chf_FI_test')
