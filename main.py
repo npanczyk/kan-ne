@@ -59,7 +59,7 @@ class NKAN:
         print("Model trained.")
         return model
 
-    def get_metrics(self, model):
+    def get_metrics(self, model, save_as):
         # get predictions and unscale data
         scaler = self.dataset['y_scaler']
         X_test = self.dataset['test_input'] # still scaled
@@ -68,25 +68,36 @@ class NKAN:
         print( Y_pred.shape, Y_test.shape)
         y_test = scaler.inverse_transform(Y_test.detach().numpy())
         y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
-        output_metrics = {}
-        for i, output in enumerate(self.dataset['output_labels']):
+        metrics = {
+            'OUTPUT':self.dataset['output_labels'],
+            'MAE':[],
+            'MAPE':[],
+            'MSE':[],
+            'RMSE':[],
+            'RMSPE':[],
+            'R2':[]
+        }
+        for i in range(len(self.dataset['output_labels'])):
+            # get metrics for each output
             yi_test = y_test[:,i]
             yi_pred = y_pred[:,i]
-            metrics = {
-            'MAE': mean_absolute_error(yi_test, yi_pred),
-            'MAPE': mape(yi_test, yi_pred),
-            'MSE': mean_squared_error(yi_test, yi_pred),
-            'RMSE': np.sqrt(mean_squared_error(yi_test, yi_pred)),
-            'RMSPE':rmspe(yi_test, yi_pred),
-            'R2':r2_score(yi_test, yi_pred)
-            }
-            output_metrics[output] = metrics
-        return output_metrics
+            metrics['MAE'].append(mean_absolute_error(yi_test, yi_pred))
+            metrics['MAPE'].append(mape(yi_test, yi_pred))
+            metrics['MSE'].append(mean_squared_error(yi_test, yi_pred))
+            metrics['RMSE'].append(np.sqrt(mean_squared_error(yi_test, yi_pred)))
+            metrics['RMSPE'].append(rmspe(yi_test, yi_pred))
+            metrics['R2'].append(r2_score(yi_test, yi_pred))
+        metrics_df = pd.DataFrame.from_dict(metrics)
+        # check to see fi there 
+        if not os.path.exists('results'):
+            os.makedirs('results')
+        metrics_df.to_csv(f'results/{save_as}.csv', index=False)
+        return metrics_df
 
     def get_schematic():
         return 
 
-    def get_equation():
+    def get_equation(model, output_label):
         return
 
     def get_importances():
@@ -97,5 +108,5 @@ if __name__=="__main__":
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
     model = test_kan.get_model()
-    metrics = test_kan.get_metrics(model)
-    print( metrics['CHF'] )
+    metrics = test_kan.get_metrics(model, 'chf_test')
+    print( metrics )

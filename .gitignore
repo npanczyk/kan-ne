@@ -170,3 +170,7 @@ cython_debug/
 # Files that shouldn't be published
 datasets/chf_train.csv
 datasets/chf_valid.csv
+model/
+figures/
+results/
+scratch.ipynb
