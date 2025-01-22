@@ -1,5 +1,5 @@
 import numpy as np
-from sympy import symbols
+from sympy import symbols, sympify
 
 def rmspe(ytest, ypred):
     """Generates root mean square percentage error.
@@ -43,11 +43,8 @@ def y_pred_sym(expression, num_vars, X_test, scaler):
     Y_pred_sym = [] # scaled predictions based on symbolic expression
     X_test = X_test.detach().numpy()
     for row in X_test:
-        inputs = {variable, value for variable, value in zip(variables, row)}
+        inputs = {variable: value for variable, value in zip(variables, row)}
         Y_pred_sym.append(float(symbolic_expr.subs(inputs).evalf()))
     Y_pred_sym = np.array(Y_pred_sym).reshape(-1, 1)
     y_pred_sym = scaler.inverse_transform(Y_pred_sym)
     return y_pred_sym
-
-if __name__=="__main__":
-    symbolic_metrics('x_1 + x_2', 2)
