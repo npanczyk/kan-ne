@@ -11,7 +11,7 @@ from kan import *
 from kan.utils import ex_round
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
-from preprocessing import get_chf
+from preprocessing import *
 from accessories import rmspe, mape
 from plotting import plot_feature_importances
 
@@ -41,7 +41,7 @@ class NKAN:
         self.k = k
         self.grid = grid
 
-    def get_model(self, test=False):
+    def get_model(self, test=False, tuning=False):
         """Uses input dataset to train and return a KAN model (without tuning).
 
         Returns:
@@ -70,7 +70,24 @@ class NKAN:
         model = model.prune()
         model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
         print("Model pruned and re-trained.")
-        return model
+        # get the average r2 score of all of the outputs for hyperparameter tuning
+        if tuning:
+            scaler = self.dataset['y_scaler']
+            X_test = self.dataset['test_input'] # still scaled
+            Y_test = self.dataset['test_output'] # still scaled
+            Y_pred = model(X_test)
+            y_test = scaler.inverse_transform(Y_test.detach().numpy())
+            y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
+            r2s = []
+            for i in range(len(self.dataset['output_labels'])):
+                yi_test = y_test[:,i]
+                yi_pred = y_pred[:,i]
+                r2s.append(r2_score(yi_test, yi_pred))
+            print(r2s)
+            avg_r2 = np.mean(r2s)
+            return avg_r2
+        else:
+            return model
 
     def get_metrics(self, model, save_as):
         """Gets a variety of metrics for each output of the given KAN model evaluated against the test set in dataset.
@@ -153,9 +170,11 @@ class NKAN:
 
 if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    test_name = 'chf_122'
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
     model = test_kan.get_model(test=False)
-    equation = test_kan.get_equation(model, 'chf_test')
-    #metrics = test_kan.get_metrics(model, 'chf_pruned_test')
-    #importances = test_kan.get_importances(model, 'chf_FI_test')
+    #r2 = test_kan.get_model(test=False, tuning=True)
+    #equation = test_kan.get_equation(model, test_name)
+    metrics = test_kan.get_metrics(model, test_name)
+    #importances = test_kan.get_importances(model, test_name)
