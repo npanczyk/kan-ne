@@ -12,3 +12,18 @@
 # 8. repeat until you have quadrupled the nodes per layer
 # 9. choose optimum # of nodes per layer
 # 10. return hyperparams as list of [input nodes, layer1 nodes, layer2 nodes, ..., output nodes]
+import numpy as np
+from hyperopt import tpe, hp, fmin
+from main import NKAN
+
+def tune(dataset, max_evals, algorithm=None):
+
+    return
+
+if __name__=="__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    test_name = 'chf_123'
+    dataset  = get_chf()
+    test_kan = NKAN(dataset=dataset, seed=42, device=device)
+    model = test_kan.get_model(test=False)
+    #r2 = test_kan.get_model(test=False, tuning=True)

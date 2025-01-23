@@ -208,7 +208,7 @@ if __name__=="__main__":
     test_name = 'chf_122'
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
-    model = test_kan.get_model(test=True)
+    model = test_kan.get_model(test=False)
     #r2 = test_kan.get_model(test=False, tuning=True)
     equation = test_kan.get_equation(model, test_name, metrics=True)
     #metrics = test_kan.get_metrics(model, test_name)
