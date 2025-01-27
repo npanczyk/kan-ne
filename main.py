@@ -86,7 +86,7 @@ class NKAN:
                 r2s.append(r2_score(yi_test, yi_pred))
             print(r2s)
             avg_r2 = np.mean(r2s)
-            return avg_r2
+            return 1 - avg_r2 # this will be minimized by hyperopt
         else:
             return model
 
