@@ -17,18 +17,11 @@ import torch
 from hyperopt import tpe, hp, fmin, Trials
 from preprocessing import *
 from functools import partial
-from kan import KAN
+from sklearn.metrics import r2_score
+from kan import *
+torch.set_default_dtype(torch.float64)
 
-def objective(depth, 
-              grid, 
-              k, 
-              steps, 
-              lamb, 
-              lamb_entropy, 
-              dataset=None, 
-              seed=None, 
-              device=None
-              ):
+def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
     """_summary_
 
     Args:
@@ -68,15 +61,15 @@ def objective(depth,
     y_test = scaler.inverse_transform(Y_test.detach().numpy())
     y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
     r2s = []
-    for i in range(len(self.dataset['output_labels'])):
+    for i in range(len(dataset['output_labels'])):
         yi_test = y_test[:,i]
         yi_pred = y_pred[:,i]
         r2s.append(r2_score(yi_test, yi_pred))
     avg_r2 = np.mean(r2s)
-    print(av_r2)
-    return {'loss': -1*avg_r2, 'status': STATUS_OK }
+    #return {'loss': -1*avg_r2, 'status': STATUS_OK }
+    return -1*avg_r2
 
-def set_space(dataset):
+def set_space():
     space = {
         "depth": hp.quniform('depth', 1, 4, 1), 
         "grid": hp.quniform('grid', 1, 10, 1), 
@@ -88,13 +81,9 @@ def set_space(dataset):
     return space
 
 
-def tune(test_set, seed, device, space, max_evals, algorithm=None):
+def tune(obj, space, max_evals, algorithm=None):
     trials = Trials()
-    best = fmin(partial(objective, 
-                dataset=test_set, 
-                seed=seed, 
-                device=device
-                ),
+    best = fmin(obj,
                 space=space,
                 algo=tpe.suggest,
                 max_evals=max_evals,
@@ -104,31 +93,27 @@ def tune(test_set, seed, device, space, max_evals, algorithm=None):
 
 
 if __name__=="__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    chf_dataset  = get_chf()
-    seed = 42
-    space = set_space(chf_dataset)
-    # print(dataset)
-    # best, trials = tune(test_set=chf_dataset, 
-    #                     seed=seed, 
-    #                     device=device, 
-    #                     space=space, 
-    #                     max_evals=10
-    #                     )
+    def obj(depth, grid, k, steps, lamb, lamb_entropy):
+        # hyperparams is a list of hyperparamters of the form below
+        dataset = get_chf()
+        seed = 42
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        return objective(depth, grid, k, steps, lamb, lamb_entropy, dataset=dataset, seed=seed, device=device)
+    # def fn(*hyperparams):
+    #     return objective(*hyperparams, dataset=chf_dataset, seed=seed, device=device)
 
-    obj = partial(objective, 
-                dataset=chf_dataset, 
-                seed=seed, 
-                device=device
-                )
+    best, trials = tune(obj, space=set_space(), max_evals=10)
+    print(best)
 
-    test_points = {
-        "depth": 1, 
-        "grid": 10, 
-        "k":3, 
-        "steps": 200, 
-        "lamb": 1, 
-        "lamb_entropy": 0
-    }
-    loss = obj(**test_points)
-    print(loss)
+    # obj = partial(objective, dataset=chf_dataset, seed=seed, device=device)
+    # print(type(obj))
+    # test_points = {
+    #     "depth": 1, 
+    #     "grid": 5, 
+    #     "k":3, 
+    #     "steps": 10, 
+    #     "lamb": 0.001, 
+    #     "lamb_entropy": 2
+    # }
+    # loss = obj(**test_points)
+    # print(loss)

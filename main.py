@@ -205,7 +205,7 @@ class NKAN:
 
 if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_name = 'chf_122'
+    test_name = 'test_run'
     dataset  = get_chf()
     test_kan = NKAN(dataset=dataset, seed=42, device=device)
     model = test_kan.get_model(test=False)
