@@ -8,7 +8,6 @@ dependencies:
   - numpy
   - pandas
   - scikit-learn
-  - cpuonly
   - pytorch
   - torchaudio
   - torchvision
