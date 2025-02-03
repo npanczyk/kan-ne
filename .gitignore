@@ -175,3 +175,5 @@ figures/
 results/
 equations/
 scratch.ipynb
+hyperparameters/
+prune_success.txt
