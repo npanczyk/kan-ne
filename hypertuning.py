@@ -25,7 +25,7 @@ import os
 torch.set_default_dtype(torch.float64)
 
 
-def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
+def objective(depth, grid, k, steps, lamb, lamb_entropy, lr_1, lr_2, dataset, seed, device):
     """This function is used as an objective function for hyperopt's fmin().
 
     Args:
@@ -35,6 +35,7 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
         steps (int): The number of training steps taken by pykan. Should range (10-200, by 10s)
         lamb (float): Overall penalty strength. Should range 0 to 1.
         lamb_entropy (float): Entropy penalty strength. Should range 0 to 10.
+        lr (float): Learning rate.
         dataset (dict): a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
         seed (int): an integer to set the seed for the run.
         device (): a pytorch device to use cpu/gpu
@@ -64,7 +65,7 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
     }
     # now, we fit the KAN using the dataset and some hyperparams
     # we do not change the optimizer as part of this search
-    model.fit(data, opt="LBFGS", steps=steps, lamb=lamb, lamb_entropy=lamb_entropy)
+    model.fit(data, opt="LBFGS", steps=steps, lamb=lamb, lamb_entropy=lamb_entropy, lr=lr_1)
     try:
         # let pykan prune some extraneous connections
         model = model.prune()
@@ -75,7 +76,7 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
             steps=steps,
             lamb=lamb,
             lamb_entropy=lamb_entropy,
-            lr=0.001,
+            lr=lr_2,
             update_grid=False,
         )  # set update grid to False to fix pruning NAN loss error
         with open(f"hyperparameters/{run_name}/{run_name}_pruned.txt", "a") as results:
@@ -110,7 +111,7 @@ def obj(params):
     dataset = get_chf(synthetic=False)  # UPDATE THIS FOR EACH DATASET
     seed = 42
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    with open(f"hyperparameters/{run_name}_params.txt", "a") as results:
+    with open(f"hyperparameters/{run_name}/{run_name}_params.txt", "a") as results:
         results.write(f"{params}\n")
     depth = int(params["depth"])
     grid = int(params["grid"])
@@ -118,6 +119,8 @@ def obj(params):
     steps = int(params["steps"])
     lamb = params["lamb"]
     lamb_entropy = params["lamb_entropy"]
+    lr_1 = params["lr_1"]
+    lr_2 = params["lr_2"]
     return objective(
         depth,
         grid,
@@ -125,6 +128,8 @@ def obj(params):
         steps,
         lamb,
         lamb_entropy,
+        lr_1,
+        lr_2,
         dataset=dataset,
         seed=seed,
         device=device,
@@ -153,10 +158,12 @@ if __name__ == "__main__":
         "depth": hp.quniform("depth", 1, 4, 1),
         "grid": hp.quniform("grid", 1, 10, 1),
         "k": hp.choice("k", [1, 2, 3, 4, 5]),
-        "steps": hp.quniform("steps", 10, 30, 1),
+        "steps": hp.quniform("steps", 10, 20, 1),
         "lamb": hp.uniform("lamb", 0, 1),
         "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
+        "lr_1": hp.choice("lr_1", [0.0001, 0.001, 0.01, 0.1, 1]),
+        "lr_2": hp.choice("lr_2", [0.0001, 0.001, 0.01, 0.1, 1]),
     }
-    best, trials = tune(obj, space=space, max_evals=3)
+    best, trials = tune(obj, space=space, max_evals=2)
     with open(f"hyperparameters/{run_name}/{run_name}_results.txt", "w") as results:
         results.write(str(best))
