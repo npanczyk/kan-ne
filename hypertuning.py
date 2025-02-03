@@ -78,10 +78,10 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
             lr=0.001,
             update_grid=False,
         )  # set update grid to False to fix pruning NAN loss error
-        with open(f"hyperparameters/{run_name}_pruned.txt", "a") as results:
+        with open(f"hyperparameters/{run_name}/{run_name}_pruned.txt", "a") as results:
             results.write("Model pruned and refit.\n")
     except RuntimeError:
-        with open(f"hyperparameters/{run_name}_pruned.txt", "a") as results:
+        with open(f"hyperparameters/{run_name}/{run_name}_pruned.txt", "a") as results:
             results.write("PRUNING SKIPPED!!!\n")
     finally:
         # get the average r2 score of all of the outputs for hyperparameter tuning
@@ -96,11 +96,10 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
             yi_test = y_test[:, i]
             yi_pred = y_pred[:, i]
             r2s.append(r2_score(yi_test, yi_pred))
-        # just in case we got a weird result, make sure all r2 scores are absolute
-        # this way we are evaluating magnitude of the error
-        r2s = np.abs(np.array(r2s))
+        # SHOULD WE DO SOMETHING HERE TO HANDLE NEGATIVE SCORES?
+        r2s = np.array(r2s)
         avg_r2 = np.mean(r2s)
-        with open(f"hyperparameters/{run_name}_R2.txt", "a") as results:
+        with open(f"hyperparameters/{run_name}/{run_name}_R2.txt", "a") as results:
             results.write(f"AVG R2 SCORE: {avg_r2}\n")
         # delete model folder at the end of the run
         shutil.rmtree("model")
@@ -108,7 +107,7 @@ def objective(depth, grid, k, steps, lamb, lamb_entropy, dataset, seed, device):
 
 
 def obj(params):
-    dataset = get_chf(synthetic=True)  # UPDATE THIS FOR EACH DATASET
+    dataset = get_chf(synthetic=False)  # UPDATE THIS FOR EACH DATASET
     seed = 42
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     with open(f"hyperparameters/{run_name}_params.txt", "a") as results:
@@ -133,35 +132,31 @@ def obj(params):
 
 
 def tune(obj, space, max_evals, algorithm=None):
-    if not os.path.exists("hyperparameters"):
-        os.makedirs("hyperparameters")
     trials = Trials()
     best = fmin(obj, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
     return best, trials
 
+def save_setup():
+    if not os.path.exists(f"hyperparameters/{run_name}"):
+        os.makedirs(f"hyperparameters/{run_name}")
+    if os.path.exists(f"hyperparameters/{run_name}/{run_name}_params.txt"):
+        os.remove(f"hyperparameters/{run_name}/{run_name}_params.txt")
+        os.remove(f"hyperparameters/{run_name}/{run_name}_R2.txt")
+        os.remove(f"hyperparameters/{run_name}/{run_name}_pruned.txt")
+    return 
+
 
 if __name__ == "__main__":
-    run_name = "chf_synth"
-    if os.path.exists(f"hyperparameters/{run_name}_params.txt"):
-        os.remove(f"hyperparameters/{run_name}_params.txt")
-        os.remove(f"hyperparameters/{run_name}_R2.txt")
-        os.remove(f"hyperparameters/{run_name}_pruned.txt")
+    run_name = "chf"
+    save_setup()
     space = {
         "depth": hp.quniform("depth", 1, 4, 1),
         "grid": hp.quniform("grid", 1, 10, 1),
         "k": hp.choice("k", [1, 2, 3, 4, 5]),
-        "steps": hp.quniform("steps", 10, 200, 1),
+        "steps": hp.quniform("steps", 10, 30, 1),
         "lamb": hp.uniform("lamb", 0, 1),
         "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
     }
-    chf_space = {
-        "depth": hp.quniform("depth", 1, 2, 1),
-        "grid": hp.quniform("grid", 5, 6, 1),
-        "k": hp.choice("k", [3, 3]),
-        "steps": hp.quniform("steps", 10, 11, 1),
-        "lamb": hp.uniform("lamb", 0.001, 0.0011),
-        "lamb_entropy": hp.uniform("lamb_entropy", 2, 3),
-    }
-    best, trials = tune(obj, space=chf_space, max_evals=3)
-    with open(f"hyperparameters/{run_name}_results.txt", "w") as results:
+    best, trials = tune(obj, space=space, max_evals=3)
+    with open(f"hyperparameters/{run_name}/{run_name}_results.txt", "w") as results:
         results.write(str(best))
