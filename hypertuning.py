@@ -148,21 +148,34 @@ def tune(obj, space, max_evals, algorithm=None):
     best = fmin(obj, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
     return best, trials
 
+##################### TUNING INDIVIDUAL DATASETS #####################
 
+def tune_case(tuner):
+    best, trials = tune(
+                    obj=tuner.objective, 
+                    space=tuner.space, 
+                    max_evals=tuner.max_evals)
+    # write the best results to our folder                
+    with open(f"hyperparameters/{tuner.run_name}/{tuner.run_name}_results.txt", "w") as results:
+        results.write(str(best))
+    return 
 
 
 if __name__ == "__main__":
     chf_tuner = Tuner(
-                    dataset= get_chf(), 
-                    run_name = "CHF_test", 
+                    dataset = get_chf(), 
+                    run_name = "CHF_250204", 
                     space = standard_space(), 
                     max_evals = 50, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    best, trials = tune(
-                    obj=chf_tuner.objective, 
-                    space=chf_tuner.space, 
-                    max_evals=chf_tuner.max_evals)
-    # write the best results to our folder                
-    with open(f"hyperparameters/{chf_tuner.run_name}/{chf_tuner.run_name}_results.txt", "w") as results:
-        results.write(str(best))
+    mitr_tuner = Tuner(
+                    dataset = get_mitr(), 
+                    run_name = "MITR_250204", 
+                    space = standard_space(), 
+                    max_evals = 50, 
+                    seed = 42, 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))               
+    tune_case(chf_tuner)
+    tune_case(mitr_tuner)
+    
