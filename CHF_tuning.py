@@ -8,7 +8,7 @@ from sklearn.metrics import r2_score
 from kan import *
 import shutil
 import os
-from hypertuning.py import objective, tune, save_setup
+from hypertuning import objective, tune, save_setup
 
 torch.set_default_dtype(torch.float64)
 
@@ -44,7 +44,7 @@ def obj(params):
 
 if __name__ == "__main__":
     run_name = "CHF_250203"
-    save_setup()
+    save_setup(run_name)
     space = {
         "depth": hp.quniform("depth", 1, 4, 1),
         "grid": hp.quniform("grid", 1, 10, 1),
