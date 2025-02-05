@@ -1,12 +1,14 @@
 import numpy as np
 import torch
-from hyperopt import tpe, hp, fmin, Trials
+from hyperopt import tpe, hp, fmin, Trials, rand
 from preprocessing import *
 from functools import partial
 from sklearn.metrics import r2_score
 from kan import *
 import shutil
 import os
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 torch.set_default_dtype(torch.float64)
 
@@ -106,8 +108,13 @@ class Tuner():
             X_test = self.dataset["test_input"]  # still scaled
             Y_test = self.dataset["test_output"]  # still scaled
             Y_pred = model(X_test)
-            y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
-            y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
+            print(f'DEVICE: {self.device}, TYPE: {type(self.device)}')
+            if str(self.device) == "cuda":
+                y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+                y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
+            else:
+                y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
+                y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
             r2s = []
             for i in range(len(self.dataset["output_labels"])):
                 yi_test = y_test[:, i]
@@ -145,7 +152,7 @@ def standard_space():
 
 def tune(obj, space, max_evals, algorithm=None):
     trials = Trials()
-    best = fmin(obj, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
+    best = fmin(obj, space=space, algo=rand.suggest, max_evals=max_evals, trials=trials)
     return best, trials
 
 ##################### TUNING INDIVIDUAL DATASETS #####################
@@ -162,11 +169,21 @@ def tune_case(tuner):
 
 
 if __name__ == "__main__":
+    main_space = {
+        "depth": hp.quniform("depth", 1, 4, 1),
+        "grid": hp.choice("grid", [5]),
+        "k": hp.choice("k", [3]),
+        "steps": hp.quniform("steps", 10, 11, 1),
+        "lamb": hp.uniform("lamb", 0.001, 0.0011),
+        "lamb_entropy": hp.uniform("lamb_entropy", 2, 2.001),
+        "lr_1": hp.choice("lr_1", [1]), # make these between 0.5 and 2, merge these two
+        "lr_2": hp.choice("lr_2", [1]),
+    }
     chf_tuner = Tuner(
-                    dataset = get_chf(), 
-                    run_name = "CHF_250204", 
-                    space = standard_space(), 
-                    max_evals = 50, 
+                    dataset = get_chf(cuda=True), 
+                    run_name = "CHF_250205_main", 
+                    space = main_space, 
+                    max_evals = 3, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     mitr_tuner = Tuner(
@@ -177,5 +194,5 @@ if __name__ == "__main__":
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))               
     tune_case(chf_tuner)
-    tune_case(mitr_tuner)
+    #tune_case(mitr_tuner)
     

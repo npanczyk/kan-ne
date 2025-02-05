@@ -9,22 +9,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 import torch
 
-# putting this on the backburner for now
-'''class data:
-    def __init__(self, filepath, column_names, output_names, filepath2=None, train_split=0.7):
-        self.filepath = filepath
-        self.column_names = column_names
-        self.output_names = output_names
-        self.split = train_split
-        if filepath2:
-            self.filepath2 = filepath2
 
-    def load_data(self.filepath, self.filepath2=None):
-        if filepath2==None:
-            df = pd.read_csv(filepath)'''
-
-
-def get_chf(synthetic=False):
+def get_chf(synthetic=False, cuda=False):
     """
     Gets data for CHF prediction.
 
@@ -50,6 +36,10 @@ def get_chf(synthetic=False):
     else:
         train_df = pd.read_csv('datasets/chf_train_synth.csv')
         test_df = pd.read_csv('datasets/chf_test_synth.csv')
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
     x_train = train_df.iloc[:, [0, 1, 2, 3, 4, 5]].values  # Input columns (1-6) D, L, P, G, T, Xe
     y_train = train_df.iloc[:, [6]].values  # CHF
     x_test = test_df.iloc[:, [0, 1, 2, 3, 4, 5]].values  
@@ -64,10 +54,10 @@ def get_chf(synthetic=False):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
