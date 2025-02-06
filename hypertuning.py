@@ -108,7 +108,6 @@ class Tuner():
             X_test = self.dataset["test_input"]  # still scaled
             Y_test = self.dataset["test_output"]  # still scaled
             Y_pred = model(X_test)
-            print(f'DEVICE: {self.device}, TYPE: {type(self.device)}')
             if str(self.device) == "cuda":
                 y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
                 y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
@@ -169,30 +168,26 @@ def tune_case(tuner):
 
 
 if __name__ == "__main__":
-    main_space = {
-        "depth": hp.quniform("depth", 1, 4, 1),
-        "grid": hp.choice("grid", [5]),
-        "k": hp.choice("k", [3]),
-        "steps": hp.quniform("steps", 10, 11, 1),
-        "lamb": hp.uniform("lamb", 0.001, 0.0011),
-        "lamb_entropy": hp.uniform("lamb_entropy", 2, 2.001),
-        "lr_1": hp.choice("lr_1", [1]), # make these between 0.5 and 2, merge these two
-        "lr_2": hp.choice("lr_2", [1]),
+    lamb_space = {
+        "depth": hp.choice("depth", [3]),
+        "grid": hp.choice("grid", [8]),
+        "k": hp.choice("k", [6]),
+        "steps": hp.choice("steps", [200]),
+        "lamb": hp.uniform("lamb", 0, 1),
+        "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
+        "lr_1": hp.choice("lr_1", [0.75]), 
+        "lr_2": hp.choice("lr_2", [0.5]),
     }
+
     chf_tuner = Tuner(
                     dataset = get_chf(cuda=True), 
-                    run_name = "CHF_250205_main", 
-                    space = main_space, 
-                    max_evals = 3, 
+                    run_name = "CHF_lambdas_250206", 
+                    space = depth_space, 
+                    max_evals = 20, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    mitr_tuner = Tuner(
-                    dataset = get_mitr(), 
-                    run_name = "MITR_250204", 
-                    space = standard_space(), 
-                    max_evals = 50, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))               
+
     tune_case(chf_tuner)
-    #tune_case(mitr_tuner)
+
+
     
