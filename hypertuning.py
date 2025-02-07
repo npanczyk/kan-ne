@@ -7,8 +7,6 @@ from sklearn.metrics import r2_score
 from kan import *
 import shutil
 import os
-import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 torch.set_default_dtype(torch.float64)
 
@@ -130,21 +128,21 @@ class Tuner():
             return -1 * avg_r2  # make negative because fmin is a minimizer
 
 ######################## OTHER FUNCTIONS ###########################
-def standard_space():
+def set_space():
     """Sets a standard space for hyperopt fmin function based on tuner params.
 
     Returns:
         dict: Dictionary with necessary hyperparameter spaces for hyperopt
     """
-    space = {
-        "depth": hp.quniform("depth", 1, 4, 1),
-        "grid": hp.quniform("grid", 1, 10, 1),
-        "k": hp.choice("k", [1, 2, 3, 4, 5]),
-        "steps": hp.quniform("steps", 100, 200, 1),
-        "lamb": hp.uniform("lamb", 0, 1),
-        "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
-        "lr_1": hp.choice("lr_1", [0.0001, 0.001, 0.01, 0.1, 1]),
-        "lr_2": hp.choice("lr_2", [0.0001, 0.001, 0.01, 0.1, 1]),
+    space = = {
+        "depth": hp.choice("depth", [1, 2, 3, 4]),
+        "grid": hp.choice("grid", [4, 5, 6, 7, 8, 9, 10]),
+        "k": hp.choice("k", [2, 3, 4, 5, 6, 7, 8]),
+        "steps": hp.choice("steps", [50, 75, 100, 125, 150, 200, 225, 250]),
+        "lamb": hp.uniform("lamb", 0, 0.001),
+        "lamb_entropy": hp.uniform("lamb_entropy", 0, 5),
+        "lr_1": hp.choice("lr_1", [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]), 
+        "lr_2": hp.choice("lr_2", [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]),
     }
     return space
 
@@ -163,31 +161,57 @@ def tune_case(tuner):
                     max_evals=tuner.max_evals)
     # write the best results to our folder                
     with open(f"hyperparameters/{tuner.run_name}/{tuner.run_name}_results.txt", "w") as results:
-        results.write(str(best))
+        results.write(str(best)+'\n')
+        results.write(tuner.space)
     return 
 
 
 if __name__ == "__main__":
-    lamb_space = {
-        "depth": hp.choice("depth", [3]),
-        "grid": hp.choice("grid", [8]),
-        "k": hp.choice("k", [6]),
-        "steps": hp.choice("steps", [200]),
-        "lamb": hp.uniform("lamb", 0, 1),
-        "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
-        "lr_1": hp.choice("lr_1", [0.75]), 
-        "lr_2": hp.choice("lr_2", [0.5]),
-    }
-
-    chf_tuner = Tuner(
-                    dataset = get_chf(cuda=True), 
-                    run_name = "CHF_lambdas_250206", 
-                    space = depth_space, 
-                    max_evals = 20, 
+    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    mitr_tuner = Tuner(
+                    dataset = get_mitr(cuda=True), 
+                    run_name = "MITR_250207", 
+                    space = set_space(), 
+                    max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-
-    tune_case(chf_tuner)
+    xs_tuner = Tuner(
+                    dataset = get_xs(cuda=True), 
+                    run_name = "XS_250207", 
+                    space = set_space(), 
+                    max_evals = 150, 
+                    seed = 42, 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    fp_tuner = Tuner(
+                    dataset = get_fp(cuda=True), 
+                    run_name = "FP_250207", 
+                    space = set_space(), 
+                    max_evals = 150, 
+                    seed = 42, 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    heat_tuner = Tuner(
+                    dataset = get_heat(cuda=True), 
+                    run_name = "HEAT_250207", 
+                    space = set_space(), 
+                    max_evals = 150, 
+                    seed = 42, 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    try:
+        tune_case(mitr_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
+    try:
+        tune_case(xs_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! XS stopped prematurely. Error: {e}")
+    try:
+        tune_case(fp_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! FP stopped prematurely. Error: {e}")
+    try:
+        tune_case(heat_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! HEAT stopped prematurely. Error: {e}")
 
 
     

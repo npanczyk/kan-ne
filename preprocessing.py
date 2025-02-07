@@ -72,7 +72,7 @@ def get_chf(synthetic=False, cuda=False):
     return dataset
 
 
-def get_mitr(test_split=0.3, random_state=42):
+def get_mitr(test_split=0.3, random_state=42, cuda=False):
     """Gets MIT microreactor data. Six features (six control blade hights) and 22 outputs (power produced by each fuel element in the core).
 
     Args:
@@ -87,6 +87,11 @@ def get_mitr(test_split=0.3, random_state=42):
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -96,10 +101,10 @@ def get_mitr(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -113,7 +118,7 @@ def get_mitr(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_xs(test_split=0.3, random_state=42):
+def get_xs(test_split=0.3, random_state=42, cuda=False):
     """Gets reactor physics data ready for KAN.
     Features (cross sections): 
     - ``FissionFast``: fast fission,
@@ -147,11 +152,16 @@ def get_xs(test_split=0.3, random_state=42):
     Y_train = scaler_Y.fit_transform(y_train)
     Y_test = scaler_Y.transform(y_test)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -165,7 +175,7 @@ def get_xs(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_fp(test_split=0.3, random_state=42):
+def get_fp(test_split=0.3, random_state=42, cuda=False):
     """
     Gets fuel performance data ready for KAN.
 
@@ -204,6 +214,11 @@ def get_fp(test_split=0.3, random_state=42):
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=42)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -213,10 +228,10 @@ def get_fp(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -230,7 +245,7 @@ def get_fp(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_heat(test_split=0.3, random_state=42):
+def get_heat(test_split=0.3, random_state=42, cuda=False):
     """Gets heat conduction data:
     Features:
      - ``qprime``: linear heat generation rate :math:`[W/m]`,
@@ -254,6 +269,10 @@ def get_heat(test_split=0.3, random_state=42):
     outputs_df = pd.read_csv('datasets/heat.csv').iloc[:, [7]]
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
@@ -264,10 +283,10 @@ def get_heat(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -281,7 +300,7 @@ def get_heat(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_rea(test_split=0.3, random_state=42):
+def get_rea(test_split=0.3, random_state=42, cuda=False):
     """Gets rod ejection accident (REA) data.
 
     Features:
@@ -308,6 +327,11 @@ def get_rea(test_split=0.3, random_state=42):
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -317,10 +341,10 @@ def get_rea(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -334,7 +358,7 @@ def get_rea(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_bwr(test_split=0.3, random_state=42):
+def get_bwr(test_split=0.3, random_state=42, cuda=False):
     """Gets BWR data.
 
     Features:
@@ -377,6 +401,11 @@ def get_bwr(test_split=0.3, random_state=42):
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -386,10 +415,10 @@ def get_bwr(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -403,7 +432,7 @@ def get_bwr(test_split=0.3, random_state=42):
     }
     return dataset
 
-def get_htgr(test_split=0.3, random_state=42):
+def get_htgr(test_split=0.3, random_state=42, cuda=False):
     """Gets high temperature gas reactor (HTGR) data:
     Features:
     - ``theta_{1}``: Angle of control drum in quadrant 1 (degrees),
@@ -433,6 +462,11 @@ def get_htgr(test_split=0.3, random_state=42):
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
 
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -442,10 +476,10 @@ def get_htgr(test_split=0.3, random_state=42):
     Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double)
-    train_output = torch.tensor(Y_train, dtype=torch.double)
-    test_input = torch.tensor(X_test, dtype=torch.double)
-    test_output = torch.tensor(Y_test, dtype=torch.double)
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -459,7 +493,3 @@ def get_htgr(test_split=0.3, random_state=42):
     }
     return dataset
 
-'''dataset = get_chf()
-hidden_nodes = dataset['train_input'].shape[1]
-print( hidden_nodes )
-print( type(hidden_nodes) )'''
