@@ -96,8 +96,9 @@ class Tuner():
             # keep a history of which runs successfully pruned
             with open(f"hyperparameters/{self.run_name}/{self.run_name}_pruned.txt", "a") as results:
                 results.write("Model pruned and refit.\n")
-        except RuntimeError:
+        except (RuntimeError, ValueError) as e:
             # and which ones didn't
+            print(e)
             with open(f"hyperparameters/{self.run_name}/{self.run_name}_pruned.txt", "a") as results:
                 results.write("PRUNING SKIPPED!!!\n")
         finally:
@@ -162,12 +163,13 @@ def tune_case(tuner):
     # write the best results to our folder                
     with open(f"hyperparameters/{tuner.run_name}/{tuner.run_name}_results.txt", "w") as results:
         results.write(str(best)+'\n')
-        results.write(tuner.space)
+        results.write(str(tuner.space))
     return 
 
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
     mitr_tuner = Tuner(
                     dataset = get_mitr(cuda=True), 
                     run_name = "MITR_250207", 
@@ -196,22 +198,22 @@ if __name__ == "__main__":
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    try:
-        tune_case(mitr_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
-    try:
-        tune_case(xs_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! XS stopped prematurely. Error: {e}")
-    try:
-        tune_case(fp_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! FP stopped prematurely. Error: {e}")
-    try:
-        tune_case(heat_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! HEAT stopped prematurely. Error: {e}")
+    # try:
+    #     tune_case(mitr_tuner)
+    # except Exception as e:
+    #     print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
+    # try:
+    #     tune_case(xs_tuner)
+    # except Exception as e:
+    #     print(f"TUNING INTERRUPTED! XS stopped prematurely. Error: {e}")
+    # try:
+    #     tune_case(fp_tuner)
+    # except Exception as e:
+    #     print(f"TUNING INTERRUPTED! FP stopped prematurely. Error: {e}")
+    # try:
+    #     tune_case(heat_tuner)
+    # except Exception as e:
+    #     print(f"TUNING INTERRUPTED! HEAT stopped prematurely. Error: {e}")
 
 
-    
+tune_case(heat_tuner)
