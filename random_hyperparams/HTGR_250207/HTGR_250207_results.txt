@@ -1,0 +1,1 @@
+{'depth': np.int64(0), 'grid': np.int64(0), 'k': np.int64(0), 'lamb': np.float64(0.0006520848804607382), 'lamb_entropy': np.float64(2.656249614122296), 'lr_1': np.int64(0), 'lr_2': np.int64(4), 'steps': np.int64(1)}
