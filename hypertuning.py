@@ -150,7 +150,7 @@ def set_space():
 
 def tune(obj, space, max_evals, algorithm=None):
     trials = Trials()
-    best = fmin(obj, space=space, algo=rand.suggest, max_evals=max_evals, trials=trials)
+    best = fmin(obj, space=space, algo=tpe.suggest, max_evals=max_evals, trials=trials)
     return best, trials
 
 ##################### TUNING INDIVIDUAL DATASETS #####################
@@ -172,48 +172,46 @@ if __name__ == "__main__":
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
     mitr_tuner = Tuner(
                     dataset = get_mitr(cuda=True), 
-                    run_name = "MITR_250207", 
+                    run_name = "MITR_250208", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     xs_tuner = Tuner(
                     dataset = get_xs(cuda=True), 
-                    run_name = "XS_250207", 
+                    run_name = "XS_250208", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     fp_tuner = Tuner(
                     dataset = get_fp(cuda=True), 
-                    run_name = "FP_250207", 
+                    run_name = "FP_250208", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     heat_tuner = Tuner(
                     dataset = get_heat(cuda=True), 
-                    run_name = "HEAT_250207", 
+                    run_name = "HEAT_250208", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    # try:
-    #     tune_case(mitr_tuner)
-    # except Exception as e:
-    #     print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
-    # try:
-    #     tune_case(xs_tuner)
-    # except Exception as e:
-    #     print(f"TUNING INTERRUPTED! XS stopped prematurely. Error: {e}")
-    # try:
-    #     tune_case(fp_tuner)
-    # except Exception as e:
-    #     print(f"TUNING INTERRUPTED! FP stopped prematurely. Error: {e}")
-    # try:
-    #     tune_case(heat_tuner)
-    # except Exception as e:
-    #     print(f"TUNING INTERRUPTED! HEAT stopped prematurely. Error: {e}")
+    try:
+        tune_case(mitr_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
+    try:
+        tune_case(xs_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! XS stopped prematurely. Error: {e}")
+    try:
+        tune_case(fp_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! FP stopped prematurely. Error: {e}")
+    try:
+        tune_case(heat_tuner)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! HEAT stopped prematurely. Error: {e}")
 
-
-tune_case(heat_tuner)

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def sort_params(params_file, r2_file):
+def sort_params(params_file, r2_file, short=True):
     with open(params_file) as f1:
         params = []
         for line in f1:
@@ -13,8 +13,12 @@ def sort_params(params_file, r2_file):
             r2_list.append(np.round(float(line.removeprefix("AVG R2 SCORE:").lstrip().strip()), 5))
     df['AVG R2'] = r2_list
     df.sort_values(by='AVG R2', ascending=False, inplace=True)
-    print(df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True))
-    return df 
+    if short:
+        df = df[0:10]
+        print(df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True))
+    else:
+        print(df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True))
+    return df
 
 def print_space(space):
     df = pd.DataFrame.from_dict(space)
@@ -23,8 +27,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/CHF_250206/CHF_250206_params.txt"
-    r2_file = "hyperparameters/CHF_250206/CHF_250206_R2.txt"
+    params_file = "hyperparameters/XS_250208/XS_250208_params.txt"
+    r2_file = "hyperparameters/XS_250208/XS_250208_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],

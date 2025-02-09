@@ -161,7 +161,7 @@ def get_xs(test_split=0.3, random_state=42, cuda=False):
     train_input = torch.tensor(X_train, dtype=torch.double).to(device)
     train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
     test_input = torch.tensor(X_test, dtype=torch.double).to(device)
-    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
@@ -286,7 +286,7 @@ def get_heat(test_split=0.3, random_state=42, cuda=False):
     train_input = torch.tensor(X_train, dtype=torch.double).to(device)
     train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
     test_input = torch.tensor(X_test, dtype=torch.double).to(device)
-    test_output = torch.tensor(Y_test, dtype=torch.double).unsqueeze(1).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
     dataset = {
