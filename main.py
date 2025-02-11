@@ -15,6 +15,7 @@ from sympy import symbols, sympify
 from preprocessing import *
 from accessories import *
 from plotting import plot_feature_importances
+import shutil
 
 
 class NKAN:
@@ -180,11 +181,14 @@ class NKAN:
 
 if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_name = 'MITR_tpe_250211'
-    dataset  = get_mitr(cuda=True)
-    params = {'depth': 2, 'grid': 4, 'k': 4, 'lamb': 0.00013821835586671683, 'lamb_entropy': 4.21645832233589, 'lr_1': 1.75, 'lr_2': 2, 'steps': 125}
-    test_kan = NKAN(dataset=dataset, seed=42, device=device, params=params)
+    test_name = 'HTGR_tpe_250211'
+    dataset  = get_htgr(cuda=True)
+    mitr_params = {'depth': 2, 'grid': 4, 'k': 4, 'lamb': 0.00013821835586671683, 'lamb_entropy': 4.21645832233589, 'lr_1': 1.75, 'lr_2': 2, 'steps': 125}
+    htgr_params = {'depth': 1, 'grid': 4, 'k': 8, 'lamb': 0.00026409167469123175, 'lamb_entropy': 2.7923722866435723, 'lr_1': 2, 'lr_2': 1, 'steps': 75}
+    test_kan = NKAN(dataset=dataset, seed=42, device=device, params=htgr_params)
     model = test_kan.get_model()
     #equation = test_kan.get_equation(model, test_name, metrics=True)
     metrics = test_kan.get_metrics(model, test_name)
     #importances = test_kan.get_importances(model, test_name)
+    # delete model folder at the end of the run
+    shutil.rmtree("model")
