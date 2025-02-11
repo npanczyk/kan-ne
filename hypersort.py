@@ -27,8 +27,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/XS_250208/XS_250208_params.txt"
-    r2_file = "hyperparameters/XS_250208/XS_250208_R2.txt"
+    params_file = "tpe_hyperparams/XS_tpe_250209/XS_tpe_250209_params.txt"
+    r2_file = "tpe_hyperparams/XS_tpe_250209/XS_tpe_250209_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],

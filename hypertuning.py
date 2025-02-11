@@ -172,28 +172,28 @@ if __name__ == "__main__":
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
     mitr_tuner = Tuner(
                     dataset = get_mitr(cuda=True), 
-                    run_name = "MITR_250208", 
+                    run_name = "MITR_tpe_250209", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     xs_tuner = Tuner(
                     dataset = get_xs(cuda=True), 
-                    run_name = "XS_250208", 
+                    run_name = "XS_tpe_250209", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     fp_tuner = Tuner(
                     dataset = get_fp(cuda=True), 
-                    run_name = "FP_250208", 
+                    run_name = "FP_tpe_250209", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     heat_tuner = Tuner(
                     dataset = get_heat(cuda=True), 
-                    run_name = "HEAT_250208", 
+                    run_name = "HEAT_tpe_250209", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
