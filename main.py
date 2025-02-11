@@ -18,77 +18,52 @@ from plotting import plot_feature_importances
 
 
 class NKAN:
-    def __init__(self, dataset, seed, device, hidden_nodes=None, k=3, grid=5):
+    def __init__(self, dataset, seed, device, params):
         """Class that creates and trains a KAN model based on an input dataset.
 
         Args:
             dataset (dict): a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output) and feature/output labels.
             seed (int): value to set random state for reproducible results
             device (str): cpu or gpu
-            hidden_nodes (list, optional): an ordered list containing the number of nodes in each hidden layer. Defaults to None.
-            k (int, optional): the spline order. Defaults to 3.
-            grid (int, optional): the number of grid intervals. Defaults to 5.
+            params (dict): a dictionary containing necessary parameters from hyperparameter tuning (depth, grid, k, steps, lamb, lamb_entropy, lr_1, and lr_2).
         """
         self.dataset = dataset
         self.seed = seed
         self.device = device
-        if hidden_nodes:
-            print("Hidden nodes given manually.")
-            self.hidden_nodes = hidden_nodes
-        else:
-            print("Hidden nodes implied.")
-            self.hidden_nodes = [self.dataset['train_input'].shape[1]] # should this be self.dataset?
-            print(f'Hidden nodes: {self.hidden_nodes}')
-        self.k = k
-        self.grid = grid
+        self.depth = int(params["depth"])
+        self.grid = int(params["grid"])
+        self.k = int(params["k"])
+        self.steps = int(params["steps"])
+        self.lamb = params["lamb"]
+        self.lamb_entropy = params["lamb_entropy"]
+        self.lr_1 = params["lr_1"]
+        self.lr_2 = params["lr_2"]
+        self.hidden_nodes_per_layer = self.dataset["train_input"].shape[1]
+        # depth is the number of layers, we have to create a list for pykan to
+        # generate the kan with these two dimensions
+        self.hidden_nodes = [self.hidden_nodes_per_layer for i in range(self.depth)]
 
-    def get_model(self, test=False, tuning=False):
-        """Uses input dataset to train and return a KAN model (without tuning).
+
+    def get_model(self):
+        """Uses input dataset to train and return a KAN model.
 
         Returns:
             pykan KAN model object: model trained on dataset provided to class
         """
         width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
-        print(width)
         model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
-        # DELETE CONDITIONAL AFTER TESTING
-        if test:
-            data = {
-            'train_input':self.dataset['train_input'][0:50],
-            'train_label':self.dataset['train_output'][0:50],
-            'test_input':self.dataset['test_input'][0:50],
-            'test_label':self.dataset['test_output'][0:50]
+        data = {
+            'train_input':self.dataset['train_input'],
+            'train_label':self.dataset['train_output'],
+            'test_input':self.dataset['test_input'],
+            'test_label':self.dataset['test_output']
         }
-        else:
-            data = {
-                'train_input':self.dataset['train_input'],
-                'train_label':self.dataset['train_output'],
-                'test_input':self.dataset['test_input'],
-                'test_label':self.dataset['test_output']
-            }
-        model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
+        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
         print("Model trained.")
         model = model.prune()
-        model.fit(data, opt='LBFGS', steps=100, lamb=0.001, lamb_entropy=2)
+        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
         print("Model pruned and re-trained.")
-        # get the average r2 score of all of the outputs for hyperparameter tuning
-        if tuning:
-            scaler = self.dataset['y_scaler']
-            X_test = self.dataset['test_input'] # still scaled
-            Y_test = self.dataset['test_output'] # still scaled
-            Y_pred = model(X_test)
-            y_test = scaler.inverse_transform(Y_test.detach().numpy())
-            y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
-            r2s = []
-            for i in range(len(self.dataset['output_labels'])):
-                yi_test = y_test[:,i]
-                yi_pred = y_pred[:,i]
-                r2s.append(r2_score(yi_test, yi_pred))
-            print(r2s)
-            avg_r2 = np.mean(r2s)
-            return 1 - avg_r2 # this will be minimized by hyperopt
-        else:
-            return model
+        return model
 
     def get_metrics(self, model, save_as, p=4):
         """Gets a variety of metrics for each output of the given KAN model evaluated against the test set in dataset.
@@ -106,8 +81,8 @@ class NKAN:
         X_test = self.dataset['test_input'] # still scaled
         Y_test = self.dataset['test_output'] # still scaled
         Y_pred = model(X_test)
-        y_test = scaler.inverse_transform(Y_test.detach().numpy())
-        y_pred = scaler.inverse_transform(Y_pred.detach().numpy())
+        y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())
+        y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())
         metrics = {
             'OUTPUT':self.dataset['output_labels'],
             'MAE':[],
@@ -205,11 +180,11 @@ class NKAN:
 
 if __name__=="__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_name = 'test_run'
-    dataset  = get_chf()
-    test_kan = NKAN(dataset=dataset, seed=42, device=device)
-    model = test_kan.get_model(test=False)
-    #r2 = test_kan.get_model(test=False, tuning=True)
-    equation = test_kan.get_equation(model, test_name, metrics=True)
-    #metrics = test_kan.get_metrics(model, test_name)
+    test_name = 'MITR_tpe_250211'
+    dataset  = get_mitr(cuda=True)
+    params = {'depth': 2, 'grid': 4, 'k': 4, 'lamb': 0.00013821835586671683, 'lamb_entropy': 4.21645832233589, 'lr_1': 1.75, 'lr_2': 2, 'steps': 125}
+    test_kan = NKAN(dataset=dataset, seed=42, device=device, params=params)
+    model = test_kan.get_model()
+    #equation = test_kan.get_equation(model, test_name, metrics=True)
+    metrics = test_kan.get_metrics(model, test_name)
     #importances = test_kan.get_importances(model, test_name)

@@ -172,7 +172,6 @@ datasets/chf_train.csv
 datasets/chf_valid.csv
 model/
 figures/
-results/
 equations/
 scratch.ipynb
 hyperparameters/
