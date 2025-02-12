@@ -101,6 +101,7 @@ class Tuner():
             print(e)
             with open(f"hyperparameters/{self.run_name}/{self.run_name}_pruned.txt", "a") as results:
                 results.write("PRUNING SKIPPED!!!\n")
+            pass
         finally:
             # get the average r2 score of all of the outputs for hyperparameter tuning
             scaler = self.dataset["y_scaler"]
@@ -108,11 +109,21 @@ class Tuner():
             Y_test = self.dataset["test_output"]  # still scaled
             Y_pred = model(X_test)
             if str(self.device) == "cuda":
-                y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
-                y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
+                try:
+                    y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+                    y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
+                except:
+                    print('Inverse Transform Incomplete!')
+                    y_test = Y_test.cpu().detach().numpy()
+                    y_pred = Y_pred.cpu().detach().numpy()
             else:
-                y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
-                y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
+                try:
+                    y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
+                    y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
+                except:
+                    print('Inverse Transform Incomplete!')
+                    y_test = Y_test.cpu().detach().numpy()
+                    y_pred = Y_pred.cpu().detach().numpy()
             r2s = []
             for i in range(len(self.dataset["output_labels"])):
                 yi_test = y_test[:, i]

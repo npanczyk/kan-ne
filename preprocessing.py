@@ -6,8 +6,9 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler, Normalizer
 import torch
+import xarray as xr
 
 
 def get_chf(synthetic=False, cuda=False):
@@ -457,12 +458,16 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
+    theta_cols = [f"theta{i + 1}" for i in range(8)]
+    flux_cols = [f"fluxQ{i + 1}" for i in range(4)]
+
     data = (
             pd.read_csv('datasets/microreactor.csv', header="infer")
             .to_xarray()
             .to_array()
             .transpose(..., "variable")
         )
+
     # slice the data based on features and outputs
     input_slice = slice(29, 37)
     output_slice = slice(4, 8)
@@ -480,25 +485,30 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     sym_train_data = mult_samples(train_data)
     sym_test_data = mult_samples(test_data)
 
-    # features_df = pd.read_csv('datasets/microreactor.csv').iloc[:,[29,30,31,32,33,34,35,36]]
-    # outputs_df = pd.read_csv('datasets/microreactor.csv').iloc[:, [4,5,6,7]]
-    # x_train, x_test, y_train, y_test = train_test_split(
-    # features_df, outputs_df, test_size=0.3, random_state=random_state)
+    # save a CSV of the reflected data
+    # train_df = sym_train_data.to_pandas()
+    # test_df = sym_test_data.to_pandas()
+    # train_df.to_csv('datasets/htgr_train.csv')
+    # test_df.to_csv('datasets/htgr_valid.csv')
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = RobustScaler()
+
+    x_train = sym_train_data.loc[:, theta_cols].values
+    x_test = sym_test_data.loc[:, theta_cols].values
+    y_train = sym_train_data.loc[:, flux_cols].values
+    y_test = sym_test_data.loc[:, flux_cols].values
+
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
 
     if cuda:
         device = 'cuda'
     else:
         device = 'cpu'
-    """
-    NEED TO NORMALIZE Y DATA AND RESPLIT AFTER MULT SAMPLES!!!!!!
-    """
-    # Define the Min-Max Scaler
-    scaler_X = MinMaxScaler()
-    scaler_Y = MinMaxScaler()
-    X_train = scaler_X.fit_transform(x_train)
-    X_test = scaler_X.transform(x_test)
-    Y_train = scaler_Y.fit_transform(y_train)
-    Y_test = scaler_Y.transform(y_test)
 
     # Convert to tensors
     train_input = torch.tensor(X_train, dtype=torch.double).to(device)
@@ -518,8 +528,11 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     }
     return dataset
 
-# Credit to mult_sym and g21 from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
+# Credit to mult_sym from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
+# Credit to mult_samples from https://github.com/aims-umich/pyMAISE
 def mult_samples(data):
+    theta_cols = [f"theta{i + 1}" for i in range(8)]
+    flux_cols = [f"fluxQ{i + 1}" for i in range(4)]
     # Create empty arrays
     ht = xr.DataArray(
         np.zeros(data.shape),

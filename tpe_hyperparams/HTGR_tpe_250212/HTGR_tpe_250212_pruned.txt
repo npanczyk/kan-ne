@@ -1,0 +1,41 @@
+Model pruned and refit.
+PRUNING SKIPPED!!!
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+PRUNING SKIPPED!!!
+Model pruned and refit.
+PRUNING SKIPPED!!!
+PRUNING SKIPPED!!!
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+PRUNING SKIPPED!!!
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+Model pruned and refit.
+PRUNING SKIPPED!!!
+
+This model used MinMaxScaler() on both the inputs and outputs, but normalized the fluxes while performing symmetry reflection on the dataset in preprocessing().

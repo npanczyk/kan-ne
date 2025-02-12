@@ -82,8 +82,22 @@ class NKAN:
         X_test = self.dataset['test_input'] # still scaled
         Y_test = self.dataset['test_output'] # still scaled
         Y_pred = model(X_test)
-        y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())
-        y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())
+        if str(self.device) == "cuda":
+                try:
+                    y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+                    y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
+                except:
+                    print('Inverse Transform Incomplete!')
+                    y_test = Y_test.cpu().detach().numpy()
+                    y_pred = Y_pred.cpu().detach().numpy()
+            else:
+                try:
+                    y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
+                    y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
+                except:
+                    print('Inverse Transform Incomplete!')
+                    y_test = Y_test.cpu().detach().numpy()
+                    y_pred = Y_pred.cpu().detach().numpy()
         metrics = {
             'OUTPUT':self.dataset['output_labels'],
             'MAE':[],
