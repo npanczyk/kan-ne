@@ -73,12 +73,14 @@ def get_chf(synthetic=False, cuda=False):
     return dataset
 
 
-def get_mitr(test_split=0.3, random_state=42, cuda=False):
+def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     """Gets MIT microreactor data. Six features (six control blade hights) and 22 outputs (power produced by each fuel element in the core).
 
     Args:
         test_split (float, optional): Ratio of test to training set. Defaults to 0.3.
         random_state (int, optional): Random state to allow for reproducible shuffling. Defaults to 42.
+        cuda (bool): Allows for gpu usage if set to True
+        region (str): A, B, or C region of the MIT microreactor (alphabetical moving out from the center of the core)
 
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
@@ -108,15 +110,46 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False):
     test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
-    dataset = {
-        'train_input': train_input,
-        'train_output': train_output,
-        'test_input': test_input,
-        'test_output': test_output,
-        'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-        'output_labels': ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
-        'y_scaler': scaler_Y
-    }
+    if region is None:
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output,
+            'test_input': test_input,
+            'test_output': test_output,
+            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+            'output_labels': ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
+            'y_scaler': scaler_Y
+        }
+    elif region.upper() == "A":
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output[:, 0],
+            'test_input': test_input,
+            'test_output': test_output[:, 0],
+            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+            'output_labels': ['A-2'],
+            'y_scaler': scaler_Y
+        }
+    elif region.upper() == "B":
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output[:,1:7],
+            'test_input': test_input,
+            'test_output': test_output[:,1:7],
+            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+            'output_labels': ['B-1','B-2','B-4','B-5','B-7','B-8'],
+            'y_scaler': scaler_Y
+        }
+    elif region.upper() == "C":
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output[:,7:],
+            'test_input': test_input,
+            'test_output': test_output[:,7:],
+            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+            'output_labels': ['C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
+            'y_scaler': scaler_Y
+        }
     return dataset
 
 def get_xs(test_split=0.3, random_state=42, cuda=False):
@@ -433,8 +466,9 @@ def get_bwr(test_split=0.3, random_state=42, cuda=False):
     }
     return dataset
 
-def get_htgr(test_split=0.3, random_state=42, cuda=False):
+def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     """Gets high temperature gas reactor (HTGR) data:
+    quadrant (int): the quadrant that you wou
     Features:
     - ``theta_{1}``: Angle of control drum in quadrant 1 (degrees),
     - ``theta_{2}``: Angle of control drum in quadrant 1 (degrees),
@@ -493,7 +527,7 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
-    scaler_Y = RobustScaler()
+    scaler_Y = StandardScaler()
 
     x_train = sym_train_data.loc[:, theta_cols].values
     x_test = sym_test_data.loc[:, theta_cols].values
@@ -516,21 +550,35 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     test_input = torch.tensor(X_test, dtype=torch.double).to(device)
     test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
+    print(f"Test Output Shape: {test_output.shape}")
+
     # Creating the dataset dictionary
-    dataset = {
-        'train_input': train_input,
-        'train_output': train_output,
-        'test_input': test_input,
-        'test_output': test_output,
-        'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
-        'output_labels': ['FluxQ1', 'FluxQ2', 'FluxQ3', 'FluxQ4'],
-        'y_scaler': scaler_Y
-    }
+    if quadrant is None:
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output,
+            'test_input': test_input,
+            'test_output': test_output,
+            'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
+            'output_labels': ['FluxQ1', 'FluxQ2', 'FluxQ3', 'FluxQ4'],
+            'y_scaler': scaler_Y
+        }
+    else:
+        dataset = {
+            'train_input': train_input,
+            'train_output': train_output,
+            'test_input': test_input,
+            'test_output': test_output[:,quadrant-1],
+            'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
+            'output_labels': [f'FluxQ{quadrant}'],
+            'y_scaler': scaler_Y
+        }
     return dataset
 
-# Credit to mult_sym from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
-# Credit to mult_samples from https://github.com/aims-umich/pyMAISE
 def mult_samples(data):
+    # Credit to mult_sym from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
+    # Credit to mult_samples from https://github.com/aims-umich/pyMAISE
+
     theta_cols = [f"theta{i + 1}" for i in range(8)]
     flux_cols = [f"fluxQ{i + 1}" for i in range(4)]
     # Create empty arrays
