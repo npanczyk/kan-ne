@@ -123,9 +123,9 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     elif region.upper() == "A":
         dataset = {
             'train_input': train_input,
-            'train_output': train_output[:, 0],
+            'train_output': train_output[:, 0].unsqueeze(1),
             'test_input': test_input,
-            'test_output': test_output[:, 0],
+            'test_output': test_output[:, 0].unsqueeze(1),
             'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
             'output_labels': ['A-2'],
             'y_scaler': scaler_Y
@@ -527,7 +527,7 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
-    scaler_Y = StandardScaler()
+    scaler_Y = MinMaxScaler()
 
     x_train = sym_train_data.loc[:, theta_cols].values
     x_test = sym_test_data.loc[:, theta_cols].values
@@ -550,8 +550,6 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     test_input = torch.tensor(X_test, dtype=torch.double).to(device)
     test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
-    print(f"Test Output Shape: {test_output.shape}")
-
     # Creating the dataset dictionary
     if quadrant is None:
         dataset = {
@@ -566,9 +564,9 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     else:
         dataset = {
             'train_input': train_input,
-            'train_output': train_output,
+            'train_output': train_output[:,quadrant-1].unsqueeze(1),
             'test_input': test_input,
-            'test_output': test_output[:,quadrant-1],
+            'test_output': test_output[:,quadrant-1].unsqueeze(1),
             'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
             'output_labels': [f'FluxQ{quadrant}'],
             'y_scaler': scaler_Y
