@@ -457,16 +457,41 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
-    features_df = pd.read_csv('datasets/microreactor.csv').iloc[:,[29,30,31,32,33,34,35,36]]
-    outputs_df = pd.read_csv('datasets/microreactor.csv').iloc[:, [4,5,6,7]]
+    data = (
+            pd.read_csv('datasets/microreactor.csv', header="infer")
+            .to_xarray()
+            .to_array()
+            .transpose(..., "variable")
+        )
+    # slice the data based on features and outputs
+    input_slice = slice(29, 37)
+    output_slice = slice(4, 8)
+    inputs = data.isel(variable=input_slice)
+    outputs = data.isel(variable=output_slice)
+    # combine slices into one xarray
+    data = xr.concat([inputs, outputs], dim=data.dims[-1])
+    # split the data
     x_train, x_test, y_train, y_test = train_test_split(
-    features_df, outputs_df, test_size=0.3, random_state=random_state)
+    inputs, outputs, test_size=0.3, random_state=random_state)
+    # merge into training and testing for mult_samples()
+    train_data = xr.concat([x_train, y_train], dim=data.dims[-1])
+    test_data = xr.concat([x_test, y_test], dim=data.dims[-1])
+    # feed to mult_samples() to get reflected dataset (3004 samples)
+    sym_train_data = mult_samples(train_data)
+    sym_test_data = mult_samples(test_data)
+
+    # features_df = pd.read_csv('datasets/microreactor.csv').iloc[:,[29,30,31,32,33,34,35,36]]
+    # outputs_df = pd.read_csv('datasets/microreactor.csv').iloc[:, [4,5,6,7]]
+    # x_train, x_test, y_train, y_test = train_test_split(
+    # features_df, outputs_df, test_size=0.3, random_state=random_state)
 
     if cuda:
         device = 'cuda'
     else:
         device = 'cpu'
-
+    """
+    NEED TO NORMALIZE Y DATA AND RESPLIT AFTER MULT SAMPLES!!!!!!
+    """
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
     scaler_Y = MinMaxScaler()
@@ -493,3 +518,72 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False):
     }
     return dataset
 
+# Credit to mult_sym and g21 from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
+def mult_samples(data):
+    # Create empty arrays
+    ht = xr.DataArray(
+        np.zeros(data.shape),
+        coords={
+            "index": [f"{idx}_h" for idx in data.coords["index"].values],
+            "variable": data.coords["variable"],
+        },
+    )
+    vt = xr.DataArray(
+        np.zeros(data.shape),
+        coords={
+            "index": [f"{idx}_v" for idx in data.coords["index"].values],
+            "variable": data.coords["variable"],
+        },
+    )
+    rt = xr.DataArray(
+        np.zeros(data.shape),
+        coords={
+            "index": [f"{idx}_r" for idx in data.coords["index"].values],
+            "variable": data.coords["variable"],
+        },
+    )
+
+    # Swap drum positions
+    hkey = [f"theta{i}" for i in np.array([3, 2, 1, 0, 7, 6, 5, 4], dtype=int) + 1]
+    vkey = [f"theta{i}" for i in np.array([7, 6, 5, 4, 3, 2, 1, 0], dtype=int) + 1]
+    rkey = [f"theta{i}" for i in np.array([4, 5, 6, 7, 0, 1, 2, 3], dtype=int) + 1]
+
+    ht.loc[:, hkey] = data.loc[:, theta_cols].values
+    vt.loc[:, vkey] = data.loc[:, theta_cols].values
+    rt.loc[:, rkey] = data.loc[:, theta_cols].values
+
+    # Adjust angles
+    ht.loc[:, hkey] = (3 * np.pi - ht.loc[:, hkey].loc[:, hkey]) % (2 * np.pi)
+    vt.loc[:, vkey] = (2 * np.pi - vt.loc[:, hkey].loc[:, vkey]) % (2 * np.pi)
+    rt.loc[:, rkey] = (np.pi + rt.loc[:, hkey].loc[:, rkey]) % (2 * np.pi)
+
+    # Fill quadrant tallies
+    hkey = [2, 1, 4, 3]
+    vkey = [4, 3, 2, 1]
+    rkey = [3, 4, 1, 2]
+
+    ht.loc[:, [f"fluxQ{i}" for i in hkey]] = data.loc[:, flux_cols].values
+    vt.loc[:, [f"fluxQ{i}" for i in vkey]] = data.loc[:, flux_cols].values
+    rt.loc[:, [f"fluxQ{i}" for i in rkey]] = data.loc[:, flux_cols].values
+
+    sym_data = xr.concat([data, ht, vt, rt], dim="index").sortby("index")
+
+    # Normalize fluxes
+    sym_data.loc[:, flux_cols].values = Normalizer().transform(sym_data.loc[:, flux_cols].values)
+
+    # Convert global coordinate system to local
+    loc_offsets = np.array(
+        [3.6820187359906447, 4.067668586955522, 2.2155167202240653 - np.pi, 2.6011665711889425 - np.pi,
+         0.5404260824008517, 0.9260759333657285, 5.3571093738138575 - np.pi, 5.742759224778734 - np.pi]
+    )
+
+    # Apply correct 0 point
+    sym_data.loc[:, theta_cols] = sym_data.loc[:, theta_cols] - loc_offsets + 2 * np.pi
+
+    # Reverse necessary angles
+    sym_data.loc[:, [f"theta{i}" for i in [3,4,5,6]]] *= -1
+
+    # Scale all to [0, 2 * np.pi]
+    sym_data.loc[:, theta_cols] = sym_data.loc[:, theta_cols] % (2 * np.pi)
+
+    return sym_data
