@@ -85,8 +85,17 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
+    if region.upper() == 'A':
+        output_cols = ['A-2']
+    elif region.upper() == 'B':
+        output_cols = ['B-1','B-2','B-4','B-5','B-7','B-8']
+    elif region.upper() == 'C':
+        output_cols = ['C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
+    else: 
+        output_cols = ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
+
     features_df = pd.read_csv('datasets/crx.csv')
-    outputs_df = pd.read_csv('datasets/powery.csv')
+    outputs_df = pd.read_csv('datasets/powery.csv', usecols=output_cols)
     x_train, x_test, y_train, y_test = train_test_split(
     features_df, outputs_df, test_size=0.3, random_state=random_state)
 
@@ -110,47 +119,17 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
-    if region is None:
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output,
-            'test_input': test_input,
-            'test_output': test_output,
-            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-            'output_labels': ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
-            'y_scaler': scaler_Y
-        }
-    elif region.upper() == "A":
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output[:, 0].unsqueeze(1),
-            'test_input': test_input,
-            'test_output': test_output[:, 0].unsqueeze(1),
-            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-            'output_labels': ['A-2'],
-            'y_scaler': scaler_Y
-        }
-    elif region.upper() == "B":
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output[:,1:7],
-            'test_input': test_input,
-            'test_output': test_output[:,1:7],
-            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-            'output_labels': ['B-1','B-2','B-4','B-5','B-7','B-8'],
-            'y_scaler': scaler_Y
-        }
-    elif region.upper() == "C":
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output[:,7:],
-            'test_input': test_input,
-            'test_output': test_output[:,7:],
-            'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
-            'output_labels': ['C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15'],
-            'y_scaler': scaler_Y
-        }
+    dataset = {
+        'train_input': train_input,
+        'train_output': train_output,
+        'test_input': test_input,
+        'test_output': test_output,
+        'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+        'output_labels': output_cols,
+        'y_scaler': scaler_Y
+    }
     return dataset
+
 
 def get_xs(test_split=0.3, random_state=42, cuda=False):
     """Gets reactor physics data ready for KAN.
@@ -466,9 +445,51 @@ def get_bwr(test_split=0.3, random_state=42, cuda=False):
     }
     return dataset
 
-def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
+def get_htgr(random_state=42, cuda=False, quadrant=None):
+    train_df = pd.read_csv('datasets/htgr_train.csv')
+    test_df = pd.read_csv('datasets/htgr_valid.csv')
+    if cuda:
+        device = 'cuda'
+    else:
+        device = 'cpu'
+    if quadrant is None:
+        flux_cols = ['fluxQ1','fluxQ2','fluxQ3','fluxQ4']
+    else:
+        flux_cols = [f'fluxQ{quadrant}']
+    x_train = train_df.loc[:,['theta1','theta2','theta3','theta4','theta5','theta6','theta7','theta8']].values
+    y_train = train_df.loc[:,flux_cols].values  # CHF
+    x_test = test_df.loc[:,['theta1','theta2','theta3','theta4','theta5','theta6','theta7','theta8']].values  
+    y_test = test_df.loc[:,flux_cols].values
+
+    # Define the Min-Max Scaler
+    scaler_X = MinMaxScaler()
+    scaler_Y = MinMaxScaler()
+    X_train = scaler_X.fit_transform(x_train)
+    X_test = scaler_X.transform(x_test)
+    Y_train = scaler_Y.fit_transform(y_train)
+    Y_test = scaler_Y.transform(y_test)
+
+    # Convert to tensors
+    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
+    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
+    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
+    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
+
+    # Creating the dataset dictionary
+    dataset = {
+        'train_input': train_input,
+        'train_output': train_output,
+        'test_input': test_input,
+        'test_output': test_output,
+        'feature_labels': ['D', 'L', 'P', 'G', 'Tin', 'Xe'],
+        'output_labels': ['CHF'],
+        'y_scaler': scaler_Y
+    }
+    return dataset
+
+def reflect_htgr(test_split=0.3, random_state=42, cuda=False):
     """Gets high temperature gas reactor (HTGR) data:
-    quadrant (int): the quadrant that you wou
+
     Features:
     - ``theta_{1}``: Angle of control drum in quadrant 1 (degrees),
     - ``theta_{2}``: Angle of control drum in quadrant 1 (degrees),
@@ -494,7 +515,6 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     """
     theta_cols = [f"theta{i + 1}" for i in range(8)]
     flux_cols = [f"fluxQ{i + 1}" for i in range(4)]
-
     data = (
             pd.read_csv('datasets/microreactor.csv', header="infer")
             .to_xarray()
@@ -520,10 +540,10 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     sym_test_data = mult_samples(test_data)
 
     # save a CSV of the reflected data
-    # train_df = sym_train_data.to_pandas()
-    # test_df = sym_test_data.to_pandas()
-    # train_df.to_csv('datasets/htgr_train.csv')
-    # test_df.to_csv('datasets/htgr_valid.csv')
+    train_df = sym_train_data.to_pandas()
+    test_df = sym_test_data.to_pandas()
+    train_df.to_csv('datasets/htgr_train.csv')
+    test_df.to_csv('datasets/htgr_valid.csv')
 
     # Define the Min-Max Scaler
     scaler_X = MinMaxScaler()
@@ -551,26 +571,15 @@ def get_htgr(test_split=0.3, random_state=42, cuda=False, quadrant=None):
     test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
 
     # Creating the dataset dictionary
-    if quadrant is None:
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output,
-            'test_input': test_input,
-            'test_output': test_output,
-            'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
-            'output_labels': ['FluxQ1', 'FluxQ2', 'FluxQ3', 'FluxQ4'],
-            'y_scaler': scaler_Y
-        }
-    else:
-        dataset = {
-            'train_input': train_input,
-            'train_output': train_output[:,quadrant-1].unsqueeze(1),
-            'test_input': test_input,
-            'test_output': test_output[:,quadrant-1].unsqueeze(1),
-            'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
-            'output_labels': [f'FluxQ{quadrant}'],
-            'y_scaler': scaler_Y
-        }
+    dataset = {
+        'train_input': train_input,
+        'train_output': train_output,
+        'test_input': test_input,
+        'test_output': test_output,
+        'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
+        'output_labels': flux_cols,
+        'y_scaler': scaler_Y
+    }
     return dataset
 
 def mult_samples(data):
