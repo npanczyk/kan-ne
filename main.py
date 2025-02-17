@@ -14,8 +14,9 @@ torch.set_default_dtype(torch.float64)
 from sympy import symbols, sympify
 from preprocessing import *
 from accessories import *
-from plotting import plot_feature_importances
+from plotting import plot_feature_importances, plot_overfitting
 import shutil
+from datetime import datetime
 
 
 class NKAN:
@@ -65,6 +66,42 @@ class NKAN:
         model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
         print("Model pruned and re-trained.")
         return model
+    
+    def check_overfit(self, step_size=10, plot=True, save_as=str(datetime.now())):
+        width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
+        print(f"WIDTH: {width}")
+        grids = np.arange(1, self.grid + step_size, step_size)
+        layer_params = [width[i]*width[i+1] for i in range(len(width) - 1)]
+        n_params = np.array(grids) * np.sum(layer_params)
+        train_rmse = []
+        test_rmse = []
+        cont_train_rmse = []
+        cont_test_rmse = []
+
+        model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
+        data = {
+            'train_input':self.dataset['train_input'],
+            'train_label':self.dataset['train_output'],
+            'test_input':self.dataset['test_input'],
+            'test_label':self.dataset['test_output']
+        }
+        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
+        print("Model trained.")
+        model = model.prune()
+
+        for i in range(len(grids)):
+            model = model.refine(grids[i])
+            results = model.fit(data, opt='LBFGS', steps=self.steps, 
+                                lamb=self. lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, stop_grid_update_step=20)
+            train_rmse.append(results['train_loss'][-1].item())
+            test_rmse.append(results['test_loss'][-1].item())
+            cont_train_rmse += results['train_loss']
+            cont_test_rmse += results['test_loss']
+
+        if plot:
+            plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test_rmse, save_as=save_as)
+
+        return train_rmse, test_rmse, n_params, grids
 
     def get_metrics(self, model, save_as, p=4):
         """Gets a variety of metrics for each output of the given KAN model evaluated against the test set in dataset.
@@ -83,21 +120,12 @@ class NKAN:
         Y_test = self.dataset['test_output'] # still scaled
         Y_pred = model(X_test)
         if str(self.device) == "cuda":
-                try:
-                    y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
-                    y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
-                except:
-                    print('Inverse Transform Incomplete!')
-                    y_test = Y_test.cpu().detach().numpy()
-                    y_pred = Y_pred.cpu().detach().numpy()
-            else:
-                try:
-                    y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
-                    y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
-                except:
-                    print('Inverse Transform Incomplete!')
-                    y_test = Y_test.cpu().detach().numpy()
-                    y_pred = Y_pred.cpu().detach().numpy()
+            y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+            y_pred = scaler.inverse_transform(Y_pred.cpu().detach().numpy())  # unscaled
+        else:
+            y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
+            y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
+
         metrics = {
             'OUTPUT':self.dataset['output_labels'],
             'MAE':[],

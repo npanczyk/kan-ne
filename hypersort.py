@@ -15,7 +15,8 @@ def sort_params(params_file, r2_file, short=True):
     df.sort_values(by='AVG R2', ascending=False, inplace=True)
     if short:
         df = df[0:10]
-        print(df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True))
+        to_latex = df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True)
+        print(to_latex)
     else:
         print(df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True))
     return df
@@ -27,8 +28,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "tpe_hyperparams/XS_tpe_250209/XS_tpe_250209_params.txt"
-    r2_file = "tpe_hyperparams/XS_tpe_250209/XS_tpe_250209_R2.txt"
+    params_file = "hyperparameters/HTGR_Q4_250213/HTGR_Q4_250213_params.txt"
+    r2_file = "hyperparameters/HTGR_Q4_250213/HTGR_Q4_250213_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],
