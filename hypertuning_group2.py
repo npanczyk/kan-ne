@@ -11,40 +11,40 @@ from hypertuning import *
 torch.set_default_dtype(torch.float64)
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"]="3"
-    # htgr_tuner_1 = Tuner(
-    #                 dataset = get_htgr(cuda=True, quadrant=1), 
-    #                 run_name = "HTGR_Q1_250213", 
-    #                 space = set_space(), 
-    #                 max_evals = 50, 
-    #                 seed = 42, 
-    #                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    os.environ["CUDA_VISIBLE_DEVICES"]="1"
+    htgr_tuner_1 = Tuner(
+                    dataset = get_htgr(cuda=True, quadrant=1), 
+                    run_name = "HTGR_Q1_250217", 
+                    space = set_space(), 
+                    max_evals = 150, 
+                    seed = 42, 
+                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_2 = Tuner(
                 dataset = get_htgr(cuda=True, quadrant=2), 
-                run_name = "HTGR_Q2_250213", 
+                run_name = "HTGR_Q2_250217", 
                 space = set_space(), 
-                max_evals = 15, 
+                max_evals = 150, 
                 seed = 42, 
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_3 = Tuner(
                     dataset = get_htgr(cuda=True, quadrant=3), 
-                    run_name = "HTGR_Q3_250213", 
+                    run_name = "HTGR_Q3_250217", 
                     space = set_space(), 
-                    max_evals = 15, 
+                    max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_4 = Tuner(
                     dataset = get_htgr(cuda=True, quadrant=4), 
-                    run_name = "HTGR_Q4_250213", 
+                    run_name = "HTGR_Q4_250217", 
                     space = set_space(), 
-                    max_evals = 15, 
+                    max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    # try:
-    #     tune_case(htgr_tuner_1)
-    # except Exception as e:
-    #     print(f"TUNING INTERRUPTED! HTGR 1 stopped prematurely. Error: {e}")     
+    try:
+        tune_case(htgr_tuner_1)
+    except Exception as e:
+        print(f"TUNING INTERRUPTED! HTGR 1 stopped prematurely. Error: {e}")     
     try:
         tune_case(htgr_tuner_2)
     except Exception as e:
