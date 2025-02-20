@@ -481,13 +481,13 @@ def get_htgr(random_state=42, cuda=False, quadrant=None):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['D', 'L', 'P', 'G', 'Tin', 'Xe'],
-        'output_labels': ['CHF'],
+        'feature_labels': ['theta1','theta2','theta3','theta4','theta5','theta6','theta7','theta8'],
+        'output_labels': flux_cols,
         'y_scaler': scaler_Y
     }
     return dataset
 
-def reflect_htgr(test_split=0.3, random_state=42, cuda=False):
+def reflect_htgr(test_split=0.3, random_state=42, normalize=False):
     """Gets high temperature gas reactor (HTGR) data:
 
     Features:
@@ -509,9 +509,6 @@ def reflect_htgr(test_split=0.3, random_state=42, cuda=False):
     Args:
         test_split (float, optional): Ratio of test to train data. Defaults to 0.3.
         random_state (int, optional): Sets random state to allow for reproducible shuffling. Defaults to 42.
-
-    Returns:
-        dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
     theta_cols = [f"theta{i + 1}" for i in range(8)]
     flux_cols = [f"fluxQ{i + 1}" for i in range(4)]
@@ -542,45 +539,16 @@ def reflect_htgr(test_split=0.3, random_state=42, cuda=False):
     # save a CSV of the reflected data
     train_df = sym_train_data.to_pandas()
     test_df = sym_test_data.to_pandas()
+    if normalize==True:
+        for df in [train_df, test_df]:
+            total = df['fluxQ1'].to_numpy(dtype=np.float64) + df['fluxQ2'].to_numpy(dtype=np.float64)+ df['fluxQ3'].to_numpy(dtype=np.float64)+ df['fluxQ4'].to_numpy(dtype=np.float64)
+            df['fluxQ1'] = df['fluxQ1']/total
+            df['fluxQ2'] = df['fluxQ2']/total
+            df['fluxQ3'] = df['fluxQ3']/total
+            df['fluxQ4'] = df['fluxQ4']/total
     train_df.to_csv('datasets/htgr_train.csv')
     test_df.to_csv('datasets/htgr_valid.csv')
-
-    # Define the Min-Max Scaler
-    scaler_X = MinMaxScaler()
-    scaler_Y = MinMaxScaler()
-
-    x_train = sym_train_data.loc[:, theta_cols].values
-    x_test = sym_test_data.loc[:, theta_cols].values
-    y_train = sym_train_data.loc[:, flux_cols].values
-    y_test = sym_test_data.loc[:, flux_cols].values
-
-    X_train = scaler_X.fit_transform(x_train)
-    X_test = scaler_X.transform(x_test)
-    Y_train = scaler_Y.fit_transform(y_train)
-    Y_test = scaler_Y.transform(y_test)
-
-    if cuda:
-        device = 'cuda'
-    else:
-        device = 'cpu'
-
-    # Convert to tensors
-    train_input = torch.tensor(X_train, dtype=torch.double).to(device)
-    train_output = torch.tensor(Y_train, dtype=torch.double).to(device)
-    test_input = torch.tensor(X_test, dtype=torch.double).to(device)
-    test_output = torch.tensor(Y_test, dtype=torch.double).to(device)
-
-    # Creating the dataset dictionary
-    dataset = {
-        'train_input': train_input,
-        'train_output': train_output,
-        'test_input': test_input,
-        'test_output': test_output,
-        'feature_labels': ['theta1', 'theta2', 'theta3', 'theta4', 'theta5', 'theta6', 'theta7', 'theta8'],
-        'output_labels': flux_cols,
-        'y_scaler': scaler_Y
-    }
-    return dataset
+    return
 
 def mult_samples(data):
     # Credit to mult_sym from https://github.com/deanrp2/MicroControl/blob/main/pmdata/utils.py#L51
@@ -655,3 +623,5 @@ def mult_samples(data):
     sym_data.loc[:, theta_cols] = sym_data.loc[:, theta_cols] % (2 * np.pi)
 
     return sym_data
+
+reflect_htgr(normalize=True)

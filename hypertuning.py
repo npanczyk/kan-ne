@@ -172,40 +172,16 @@ def tune_case(tuner):
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
-    mitr_tuner_A = Tuner(
-                    dataset = get_mitr(cuda=True, region="A"), 
-                    run_name = "MITR_A_250217", 
-                    space = set_space(), 
-                    max_evals = 150, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    mitr_tuner_B = Tuner(
-                    dataset = get_mitr(cuda=True, region="B"), 
-                    run_name = "MITR_B_250217", 
-                    space = set_space(), 
-                    max_evals = 150, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    mitr_tuner_C = Tuner(
-                    dataset = get_mitr(cuda=True, region="C"), 
-                    run_name = "MITR_C_250217", 
-                    space = set_space(), 
-                    max_evals = 150, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    htgr_tuner = Tuner(
+                dataset = get_htgr(cuda=True), 
+                run_name = "HTGRn_250220", 
+                space = set_space(), 
+                max_evals = 150, 
+                seed = 42, 
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    try:
-        tune_case(mitr_tuner_C)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR A stopped prematurely. Error: {e}")
-    try:
-        tune_case(mitr_tuner_A)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR A stopped prematurely. Error: {e}")
-    try:
-        tune_case(mitr_tuner_B)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR A stopped prematurely. Error: {e}")
+    tune_case(htgr_tuner)
+
 
 
 

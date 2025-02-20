@@ -28,8 +28,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/HTGR_Q4_250217/HTGR_Q4_250217_params.txt"
-    r2_file = "hyperparameters/HTGR_Q4_250217/HTGR_Q4_250217_R2.txt"
+    params_file = "hyperparameters/HTGR_Q4n_250220/HTGR_Q4n_250220_params.txt"
+    r2_file = "hyperparameters/HTGR_Q4n_250220/HTGR_Q4n_250220_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],

@@ -14,28 +14,28 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="1"
     htgr_tuner_1 = Tuner(
                     dataset = get_htgr(cuda=True, quadrant=1), 
-                    run_name = "HTGR_Q1_250217", 
+                    run_name = "HTGR_Q1n_250220", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_2 = Tuner(
                 dataset = get_htgr(cuda=True, quadrant=2), 
-                run_name = "HTGR_Q2_250217", 
+                run_name = "HTGR_Q2n_250220", 
                 space = set_space(), 
                 max_evals = 150, 
                 seed = 42, 
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_3 = Tuner(
                     dataset = get_htgr(cuda=True, quadrant=3), 
-                    run_name = "HTGR_Q3_250217", 
+                    run_name = "HTGR_Q3n_250220", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
                     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     htgr_tuner_4 = Tuner(
                     dataset = get_htgr(cuda=True, quadrant=4), 
-                    run_name = "HTGR_Q4_250217", 
+                    run_name = "HTGR_Q4n_250220", 
                     space = set_space(), 
                     max_evals = 150, 
                     seed = 42, 
