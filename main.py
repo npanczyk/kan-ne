@@ -158,6 +158,10 @@ class NKAN:
     def get_equation(self, model, save_as, lib=None, metrics=False):
         # remove lib after testing (here now to make things faster)
         lib = ['x','x^2','x^3','x^4','exp','log','sqrt','tanh','sin','tan','abs']
+        # make 3 libraries in order of increasing complexity
+        # report metrics and time to convert for each run
+        # repeat for all datasets on best model
+        # get feature labels to map to x_1, x_2, x_3,....
         model.auto_symbolic(lib=lib)
         if not os.path.exists('equations'):
             os.makedirs('equations')

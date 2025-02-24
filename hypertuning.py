@@ -172,15 +172,29 @@ def tune_case(tuner):
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
-    htgr_tuner = Tuner(
-                dataset = get_htgr(cuda=True), 
-                run_name = "HTGRn_250220", 
+    bwr_tuner = Tuner(
+                dataset = get_bwr(cuda=True), 
+                run_name = "BWR_250224", 
+                space = set_space(), 
+                max_evals = 150, 
+                seed = 42, 
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    mitr_B_tuner = Tuner(
+                dataset = get_mitr(cuda=True, region='B'), 
+                run_name = "MITR_B_250224", 
                 space = set_space(), 
                 max_evals = 150, 
                 seed = 42, 
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
-    tune_case(htgr_tuner)
+    try:
+        tune_case(bwr_tuner)
+    except Exception as e:
+        print(f'BWR tuner skipped! Error: {e}')
+    try:
+        tune_case(mitr_B_tuner)
+    except Exception as e:
+        print(f'MITR tuner skipped! Error: {e}')
 
 
 
