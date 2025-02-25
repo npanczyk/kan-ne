@@ -17,6 +17,7 @@ from accessories import *
 from plotting import plot_feature_importances, plot_overfitting
 import shutil
 from datetime import datetime
+import time
 
 
 class NKAN:
@@ -156,22 +157,33 @@ class NKAN:
         return 
 
     def get_equation(self, model, save_as, lib=None, metrics=False):
-        # remove lib after testing (here now to make things faster)
-        lib = ['x','x^2','x^3','x^4','exp','log','sqrt','tanh','sin','tan','abs']
         # make 3 libraries in order of increasing complexity
         # report metrics and time to convert for each run
         # repeat for all datasets on best model
         # get feature labels to map to x_1, x_2, x_3,....
+        n_outputs = len(self.dataset['output_labels'])
+        start = time.time()
         model.auto_symbolic(lib=lib)
         if not os.path.exists('equations'):
             os.makedirs('equations')
         f = open(f"equations/{save_as}_equation.txt", "w")
         for i, output in enumerate(self.dataset['output_labels']):
             formula = model.symbolic_formula()[0][i]
-            clean_formula = ex_round(formula, 4)
-            f.write(f"{output} = {clean_formula}")
+            # round all the coefficients
+            clean_formula = str(ex_round(formula, 4))
+            variable_map = get_variable_map()
+            n_features = len(self.dataset['feature_labels'])
+            for j in range(n_features):
+                # go in descending order here to make sure x_11 gets subbed before x_1
+                variable_map[f'x_{n_features - j}'] = self.dataset['feature_labels'][n_features-j-1]
+            variable_map['_'] = '\\_'
+            print( f'VARIABLE MAP: {variable_map}' )
+            for char, replacement in variable_map.items():
+                clean_formula = clean_formula.replace(char,replacement)
+            f.write(output +' = '+ clean_formula)
             f.write("\n")
         f.close()
+        end = time.time()
         # generate and save the metrics here!
         if metrics:
             p = 4
@@ -179,7 +191,10 @@ class NKAN:
             X_test = self.dataset['test_input'] # still scaled
             Y_test = self.dataset['test_output'] # still scaled
             num_vars = len(self.dataset['feature_labels'])
-            y_test = scaler.inverse_transform(Y_test.detach().numpy())
+            if str(self.device) == "cuda":
+                y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+            else:
+                y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
             metrics = {
                 'OUTPUT':self.dataset['output_labels'],
                 'MAE':[],
@@ -187,13 +202,15 @@ class NKAN:
                 'MSE':[],
                 'RMSE':[],
                 'RMSPE':[],
-                'R2':[]
+                'R2':[],
+                'CONVERSION TIME [s]': end - start
             }
-            for i in range(len(self.dataset['output_labels'])):
+            expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
+            y_pred = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
+            for i in range(n_outputs):
                 # get metrics for each output
                 yi_test = y_test[:,i]
-                expression = ex_round(model.symbolic_formula()[0][i], 4)
-                yi_pred = y_pred_sym(expression, num_vars, X_test, scaler)
+                yi_pred = y_pred[:,i]
                 metrics['MAE'].append(round(mean_absolute_error(yi_test, yi_pred), p))
                 metrics['MAPE'].append(round(mape(yi_test, yi_pred), p))
                 metrics['MSE'].append(round(mean_squared_error(yi_test, yi_pred), p))
@@ -218,7 +235,10 @@ class NKAN:
             pytorch tensor: feature importances in order of original dataset
         """
         importances = model.feature_score
-        importances = importances.detach().numpy()
+        if str(self.device) == "cuda":
+            importances = importances.cpu().detach().numpy()
+        else:
+            importances = importances.detach().numpy()
         fig = plot_feature_importances(importances, self.dataset['feature_labels'])
         if not os.path.exists('figures'):
             os.makedirs('figures')

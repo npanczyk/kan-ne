@@ -85,14 +85,14 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
-    if region.upper() == 'A':
+    if region is None:
+        output_cols = ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
+    elif region.upper() == 'A':
         output_cols = ['A-2']
     elif region.upper() == 'B':
         output_cols = ['B-1','B-2','B-4','B-5','B-7','B-8']
     elif region.upper() == 'C':
         output_cols = ['C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
-    else: 
-        output_cols = ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
 
     features_df = pd.read_csv('datasets/crx.csv')
     outputs_df = pd.read_csv('datasets/powery.csv', usecols=output_cols)
@@ -623,5 +623,3 @@ def mult_samples(data):
     sym_data.loc[:, theta_cols] = sym_data.loc[:, theta_cols] % (2 * np.pi)
 
     return sym_data
-
-reflect_htgr(normalize=True)

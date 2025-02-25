@@ -2,10 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_feature_importances(importances, labels):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize =(8, 10))
     x_vals = np.arange(0, len(labels))
-    ax.bar(x_vals, importances, width=0.4, tick_label=labels)
+    ax.bar(x_vals, importances, width=0.4)
     ax.set_ylabel('Relative Feature Importances')
+    ax.set_xticks(range(len(x_vals)))
+    ax.set_xticklabels(labels, rotation=45)
     return fig
 
 def plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test_rmse, save_as):
