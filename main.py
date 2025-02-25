@@ -47,7 +47,7 @@ class NKAN:
         self.hidden_nodes = [self.hidden_nodes_per_layer for i in range(self.depth)]
 
 
-    def get_model(self):
+    def get_model(self, save_as):
         """Uses input dataset to train and return a KAN model.
 
         Returns:
@@ -66,6 +66,9 @@ class NKAN:
         model = model.prune()
         model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
         print("Model pruned and re-trained.")
+        if not os.path.exists('models'):
+            os.makedirs('models')
+        model.saveckpt(f'models/{save_as}')
         return model
     
     def check_overfit(self, step_size=10, plot=True, save_as=str(datetime.now())):
@@ -157,13 +160,10 @@ class NKAN:
         return 
 
     def get_equation(self, model, save_as, lib=None, metrics=False):
-        # make 3 libraries in order of increasing complexity
-        # report metrics and time to convert for each run
-        # repeat for all datasets on best model
-        # get feature labels to map to x_1, x_2, x_3,....
         n_outputs = len(self.dataset['output_labels'])
         start = time.time()
-        model.auto_symbolic(lib=lib)
+        # this permanently converts activation functions
+        model.auto_symbolic(lib=lib, weight_simple=0)
         if not os.path.exists('equations'):
             os.makedirs('equations')
         f = open(f"equations/{save_as}_equation.txt", "w")
