@@ -54,6 +54,7 @@ class NKAN():
             'test_input':self.dataset['test_input'],
             'test_label':self.dataset['test_output']
         }
+        self.model = KAN(width=self.width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
         
     
 
@@ -68,12 +69,12 @@ class NKAN():
         Returns:
             pykan KAN model object: model trained on dataset provided to class
         """
-        model = KAN(width=self.width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
+        model = self.model
         model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
         print("Model trained.")
-        # model = model.prune()
-        # model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
-        # print("Model pruned and re-trained.")
+        model = model.prune()
+        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
+        print("Model pruned and re-trained.")
         if not os.path.exists('models'):
             os.makedirs('models')
         if save:
@@ -245,7 +246,8 @@ class NKAN():
             if not os.path.exists('results'):
                 os.makedirs('results')
             metrics_df.to_csv(f'results/{save_as}_symetrics.csv', index=False)
-        return 
+            print(metrics_df)
+        return expressions
 
     def get_importances(self, model, save_as):
         """Uses pykan built-in feature importance functionality to rank features from a given model and plot their importances. 
