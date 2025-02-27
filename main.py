@@ -20,7 +20,7 @@ from datetime import datetime
 import time
 
 
-class NKAN:
+class NKAN():
     def __init__(self, dataset, seed, device, params):
         """Class that creates and trains a KAN model based on an input dataset.
 
@@ -31,50 +31,76 @@ class NKAN:
             params (dict): a dictionary containing necessary parameters from hyperparameter tuning (depth, grid, k, steps, lamb, lamb_entropy, lr_1, and lr_2).
         """
         self.dataset = dataset
-        self.seed = seed
-        self.device = device
+        self.hidden_nodes_per_layer = self.dataset["train_input"].shape[1]
+        # depth is the number of layers, we have to create a list for pykan to
+        # generate the kan with these two dimensions
         self.depth = int(params["depth"])
-        self.grid = int(params["grid"])
+        self.hidden_nodes = [self.hidden_nodes_per_layer for i in range(self.depth)]
+        self.width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
         self.k = int(params["k"])
+        self.grid = int(params["grid"])
+        # inherit initialization from KAN class
+        # super().__init__(width, grid, k, seed, device)
         self.steps = int(params["steps"])
         self.lamb = params["lamb"]
         self.lamb_entropy = params["lamb_entropy"]
         self.lr_1 = params["lr_1"]
         self.lr_2 = params["lr_2"]
-        self.hidden_nodes_per_layer = self.dataset["train_input"].shape[1]
-        # depth is the number of layers, we have to create a list for pykan to
-        # generate the kan with these two dimensions
-        self.hidden_nodes = [self.hidden_nodes_per_layer for i in range(self.depth)]
-
-
-    def get_model(self, save_as):
-        """Uses input dataset to train and return a KAN model.
-
-        Returns:
-            pykan KAN model object: model trained on dataset provided to class
-        """
-        width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
-        model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
-        data = {
+        self.device = device
+        self.seed = seed
+        self.data = {
             'train_input':self.dataset['train_input'],
             'train_label':self.dataset['train_output'],
             'test_input':self.dataset['test_input'],
             'test_label':self.dataset['test_output']
         }
-        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
+        
+    
+
+
+    def get_model(self, save=False, save_as=None):
+        """Uses input dataset to train and return a KAN model.
+
+        Args:
+            save (bool, optional): determines whether or not to save the model object to be reloaded later. Defaults to False.
+            save_as (str, optional): name of the saved model object in /models. Defaults to None.
+
+        Returns:
+            pykan KAN model object: model trained on dataset provided to class
+        """
+        model = KAN(width=self.width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
+        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
         print("Model trained.")
-        model = model.prune()
-        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
-        print("Model pruned and re-trained.")
+        # model = model.prune()
+        # model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
+        # print("Model pruned and re-trained.")
         if not os.path.exists('models'):
             os.makedirs('models')
-        model.saveckpt(f'models/{save_as}')
+        if save:
+            model.saveckpt(f'models/{save_as}')
         return model
+
+    # def fit(self, opt='LBFGS'):
+    #     data = {
+    #         'train_input':self.dataset['train_input'],
+    #         'train_label':self.dataset['train_output'],
+    #         'test_input':self.dataset['test_input'],
+    #         'test_label':self.dataset['test_output']
+    #     }
+    #     super().fit(data, opt, steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
     
-    def check_overfit(self, step_size=10, plot=True, save_as=str(datetime.now())):
+    def refine(self, model, grids, save_as=f'refine_{str(datetime.now())}'):
+        """Makes a plot to check overfitting while training a model from scratch. 
+
+        Args:
+            grids (list): List of integers that represent grid refinements to implement.
+            plot (bool, optional): _description_. Defaults to True.
+            save_as (_type_, optional): _description_. Defaults to str(datetime.now()).
+
+        Returns:
+            _type_: _description_
+        """
         width = [self.dataset['train_input'].shape[1]] + self.hidden_nodes + [self.dataset['train_output'].shape[1]]
-        print(f"WIDTH: {width}")
-        grids = np.arange(1, self.grid + step_size, step_size)
         layer_params = [width[i]*width[i+1] for i in range(len(width) - 1)]
         n_params = np.array(grids) * np.sum(layer_params)
         train_rmse = []
@@ -82,30 +108,18 @@ class NKAN:
         cont_train_rmse = []
         cont_test_rmse = []
 
-        model = KAN(width=width, grid=self.grid, k=self.k, seed=self.seed, device=self.device)
-        data = {
-            'train_input':self.dataset['train_input'],
-            'train_label':self.dataset['train_output'],
-            'test_input':self.dataset['test_input'],
-            'test_label':self.dataset['test_output']
-        }
-        model.fit(data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
-        print("Model trained.")
-        model = model.prune()
-
         for i in range(len(grids)):
             model = model.refine(grids[i])
-            results = model.fit(data, opt='LBFGS', steps=self.steps, 
-                                lamb=self. lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, stop_grid_update_step=20)
+            results = model.fit(self.data, opt='LBFGS', steps=self.steps, 
+                                lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1, stop_grid_update_step=20)
             train_rmse.append(results['train_loss'][-1].item())
             test_rmse.append(results['test_loss'][-1].item())
             cont_train_rmse += results['train_loss']
             cont_test_rmse += results['test_loss']
 
-        if plot:
-            plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test_rmse, save_as=save_as)
+        fig = plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test_rmse, save_as=save_as)
 
-        return train_rmse, test_rmse, n_params, grids
+        return fig
 
     def get_metrics(self, model, save_as, p=4):
         """Gets a variety of metrics for each output of the given KAN model evaluated against the test set in dataset.
@@ -159,11 +173,20 @@ class NKAN:
     def get_schematic():
         return 
 
-    def get_equation(self, model, save_as, lib=None, metrics=False):
+    def get_equation(self, model, save_as, simple=0.8, lib=None, metrics=False):
+        """Converts splines into symbolic functions for the model object. Saves symbolic functions for each output to a text file under /equations. If metrics, calculates and saves symbolic metrics to a file under /results.
+
+        Args:
+            model (kan model object): kan model either directly from get_model() or from NKAN.loadpkct() (inherited from KAN). 
+            save_as (str): _description_
+            simple (float between 0 and 1, optional): 1 weights simplicity of symbolic expression completely over accuracy (R2), 0 does the opposite . Defaults to 0.8.
+            lib (list, optional): Library of symbolic functions written as strings. Defaults to None.
+            metrics (bool, optional): If true, calculates and saves symbolic metrics under /results. Defaults to False.
+        """
         n_outputs = len(self.dataset['output_labels'])
         start = time.time()
         # this permanently converts activation functions
-        model.auto_symbolic(lib=lib, weight_simple=0)
+        model.auto_symbolic(lib=lib, weight_simple=simple)
         if not os.path.exists('equations'):
             os.makedirs('equations')
         f = open(f"equations/{save_as}_equation.txt", "w")
