@@ -4,6 +4,7 @@ import shutil
 import os
 from kan import *
 fp_TEST = {'depth': 1, 'grid': 4, 'k': 8, 'lamb': 1.4831135449453957e-07, 'lamb_entropy': 1.8089227877236496, 'lr_1': 1.5, 'lr_2': 1.25, 'steps': 10}
+chf_TEST = {'depth': 3, 'grid': 8, 'k': 8, 'lamb': 3.3619635794339965e-07, 'lamb_entropy': 2.078997799175118, 'lr_1': 1.25, 'lr_2': 1.25, 'steps': 20}
 
 fp_best = {'depth': 1, 'grid': 4, 'k': 8, 'lamb': 1.4831135449453957e-07, 'lamb_entropy': 1.8089227877236496, 'lr_1': 1.5, 'lr_2': 1.25, 'steps': 125}
 bwr_best = {'depth': 1, 'grid': 10, 'k': 2, 'lamb': 3.0698178578908114e-05, 'lamb_entropy': 0.886893553328925, 'lr_1': 1.5, 'lr_2': 1, 'steps': 225}
@@ -20,10 +21,11 @@ xs_best = {'depth': 1, 'grid': 5, 'k': 6, 'lamb': 6.618155426602294e-06, 'lamb_e
 def run_model(device, dataset, params, run_name, lib=None):
     kan = NKAN(dataset, 42, device, params)
     model = kan.get_model()
-    #spline_metrics = kan.get_metrics(model, run_name)
-    equation = kan.get_equation(model, run_name, lib, metrics=True)
-    #importances = kan.get_importances(model, run_name)
-    shutil.rmtree("model")
+    model = model.prune()
+    model.saveckpt(f'models/{run_name}')
+    spline_metrics = kan.get_metrics(model, run_name)
+    equation = kan.get_equation(model, run_name, simple=0, lib=None, metrics=True)
+    importances = kan.get_importances(model, run_name)
     return
 
 def test_libs(device, dataset, params, run_name):
@@ -35,12 +37,15 @@ def test_libs(device, dataset, params, run_name):
     lib2 = ['x', 'x^2', 'x^3', 'x^4', 'x^5', '1/x', '1/x^2', '1/x^3', '1/x^4', '1/x^5', 'sqrt', 'x^0.5', 'x^1.5', '1/sqrt(x)', '1/x^0.5', 'exp', 'log', 'abs', 'sin', 'cos', 'tan', 'tanh', 'sgn', 'arcsin', 'arccos', 'arctan', 'arctanh', '0', 'gaussian']
     libs = [lib0, lib1, lib2]
     for i, lib in enumerate(libs):
-        model = KAN.loadckpt(f'models/{run_name}')
+        kan.loadckpt(f'models/{run_name}')
+        kan.unfix_symbolic_all()
         print('model loaded.')
-        kan.get_equation(model, run_name, lib, metrics=True)
+        kan.get_equation(model, f'run_name_{i}', lib, metrics=True)
     return
 
 if __name__=="__main__":
+    shutil.rmtree("model")
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_libs(device=device, dataset=get_fp(cuda=True), params=fp_TEST, run_name='FP_TEST')
+    run_model(device, get_chf(cuda=True), chf_best, 'chf_022625')
+

@@ -19,6 +19,7 @@ def plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test
     ax1.set_yscale('log')
     ax1.set_xlabel('Number of Parameters')
     ax1.set_ylabel('RMSE')
+    fig.show()
     fig.savefig(f'figures/{save_as}_nparams.png', dpi=300)
 
     fig, ax2 = plt.subplots()
@@ -28,8 +29,9 @@ def plot_overfitting(n_params, train_rmse, test_rmse, cont_train_rmse, cont_test
     ax2.set_xlabel('Step')
     ax2.set_ylabel('RMSE')
     ax2.set_yscale('log')
+    fig.show()
     fig.savefig(f'figures/{save_as}.png', dpi=300)
-    return
+    return fig
 
 if __name__=="__main__":
     fig = plot_feature_importances([0.4, 0.3, 0.1], ['red', 'orange', 'yellow'])
