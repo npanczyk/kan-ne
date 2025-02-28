@@ -38,7 +38,6 @@ def test_libs(device, dataset, params, run_name):
     libs = [lib0, lib1, lib2]
     for i, lib in enumerate(libs):
         kan.loadckpt(f'models/{run_name}')
-        kan.unfix_symbolic_all()
         print('model loaded.')
         kan.get_equation(model, f'run_name_{i}', lib, metrics=True)
     return
