@@ -5,20 +5,23 @@ from preprocessing import *
 from functools import partial
 from sklearn.metrics import r2_score
 from kan import *
+from accessories import *
 import shutil
 import os
+import csv
 
 torch.set_default_dtype(torch.float64)
 
 ########################  TUNER CLASS ###########################
 class Tuner():
-    def __init__(self, dataset, run_name, space, max_evals, seed, device):
+    def __init__(self, dataset, run_name, space, max_evals, seed, device, symbolic=False):
         self.dataset = dataset
         self.run_name = run_name
         self.space = space
         self.max_evals = max_evals
         self.seed = seed
         self.device = device
+        self.symbolic = symbolic
         # make sure our file structure is ready to go
         try:
             os.makedirs(f"hyperparameters/{self.run_name}")
@@ -57,6 +60,7 @@ class Tuner():
         lamb_entropy = params["lamb_entropy"]
         lr_1 = params["lr_1"]
         lr_2 = params["lr_2"]
+        reg_metric = params["reg_metric"]
         # default the hidden nodes per layer as the same as the number of input features
         # this ensures that we start with a "block" of nodes and let
         # pykan trim them into a "tree"
@@ -79,7 +83,7 @@ class Tuner():
         }
         # now, we fit the KAN using the dataset and some hyperparams
         # we do not change the optimizer as part of this search
-        model.fit(data, opt="LBFGS", steps=steps, lamb=lamb, lamb_entropy=lamb_entropy, lr=lr_1)
+        model.fit(data, opt="LBFGS", steps=steps, lamb=lamb, lamb_entropy=lamb_entropy, lr=lr_1, reg_metric=reg_metric)
         try:
             # let pykan prune some extraneous connections
             model = model.prune()
@@ -91,7 +95,7 @@ class Tuner():
                 lamb=lamb,
                 lamb_entropy=lamb_entropy,
                 lr=lr_2,
-                update_grid=False,
+                update_grid=False, reg_metric=reg_metric
             ) # change update_grid to False to fix NaN error
             # keep a history of which runs successfully pruned
             with open(f"hyperparameters/{self.run_name}/{self.run_name}_pruned.txt", "a") as results:
@@ -123,12 +127,36 @@ class Tuner():
             # SHOULD WE DO SOMETHING HERE TO HANDLE NEGATIVE SCORES?
             r2s = np.array(r2s)
             avg_r2 = np.mean(r2s)
-            # keeping track of our avg R2 scores for each run
-            with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
-                results.write(f"AVG R2 SCORE: {avg_r2}\n")
-            # delete model folder at the end of the run
-            shutil.rmtree("model")
-            return -1 * avg_r2  # make negative because fmin is a minimizer
+            if self.symbolic:
+                n_outputs = len(self.dataset['output_labels'])
+                num_vars = len(self.dataset['feature_labels'])
+                # convert activation functions to symbolic expressions
+                # hold simple at 0 to maximize R2, can be reduced later
+                model.auto_symbolic(lib=None, weight_simple=0)
+                # get ROUNDED symbolic metrics
+                expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
+                y_sym = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
+                sym_r2s = []
+                for i in range(n_outputs):
+                    ysi_test = y_test[:, i]
+                    ysi_pred = y_sym[:, i]
+                    sym_r2s.append(r2_score(ysi_test, ysi_pred))
+                sym_r2s = np.array(sym_r2s)
+                sym_r2 = np.mean(sym_r2s)
+                # keeping track of our avg R2 scores for each run
+                with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
+                    results.write(f"AVG R2 SCORE: {avg_r2}, SYMBOLIC: {sym_r2}\n")
+                # delete model folder at the end of the run
+                shutil.rmtree("model")
+                # calculate a weighted average of spline and symbolic scores
+                return -1 * (0.2*avg_r2 + 0.8*sym_r2)
+            else:
+                # keeping track of our avg R2 scores for each run
+                with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
+                    results.write(f"AVG R2 SCORE: {avg_r2}\n")
+                # delete model folder at the end of the run
+                shutil.rmtree("model")
+                return -1 * avg_r2  # make negative because fmin is a minimizer
 
 ######################## OTHER FUNCTIONS ###########################
 def set_space():
@@ -138,14 +166,19 @@ def set_space():
         dict: Dictionary with necessary hyperparameter spaces for hyperopt
     """
     space = {
-        "depth": hp.choice("depth", [1, 2, 3, 4]),
-        "grid": hp.choice("grid", [4, 5, 6, 7, 8, 9, 10]),
+        "depth": hp.choice("depth", [1, 2]),
+        "grid": hp.choice("grid", [3, 4, 5, 6, 7, 8, 9, 10]),
         "k": hp.choice("k", [2, 3, 4, 5, 6, 7, 8]),
-        "steps": hp.choice("steps", [50, 75, 100, 125, 150, 200, 225, 250]),
+        "steps": hp.choice("steps", [25, 50, 75, 100, 125, 150, 200, 250]),
         "lamb": hp.uniform("lamb", 0, 0.001),
-        "lamb_entropy": hp.uniform("lamb_entropy", 0, 5),
+        "lamb_entropy": hp.uniform("lamb_entropy", 0, 10),
         "lr_1": hp.choice("lr_1", [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]), 
         "lr_2": hp.choice("lr_2", [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]),
+        "reg_metric": hp.choice("reg_metric", ["edge_forward_spline_n",
+                                                "edge_forward_sum",
+                                                "edge_forward_spline_u",
+                                                "edge_backward",
+                                                "node_backward"])
     }
     return space
 
@@ -165,36 +198,39 @@ def tune_case(tuner):
     # write the best results to our folder                
     with open(f"hyperparameters/{tuner.run_name}/{tuner.run_name}_results.txt", "w") as results:
         results.write(str(best)+'\n')
-        results.write(str(tuner.space))
     return 
 
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    os.environ["CUDA_VISIBLE_DEVICES"]="1"
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
-    bwr_tuner = Tuner(
-                dataset = get_bwr(cuda=True), 
-                run_name = "BWR_250224", 
+    chf_tuner = Tuner(
+                dataset = get_chf(cuda=True), 
+                run_name = "CHF_250228", 
                 space = set_space(), 
-                max_evals = 150, 
+                max_evals = 200, 
                 seed = 42, 
-                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    mitr_B_tuner = Tuner(
-                dataset = get_mitr(cuda=True, region='B'), 
-                run_name = "MITR_B_250224", 
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                symbolic = True)
+
+    htgr_tuner = Tuner(
+                dataset = get_htgr(cuda=True), 
+                run_name = "HTGR_250228", 
                 space = set_space(), 
-                max_evals = 150, 
+                max_evals = 200, 
                 seed = 42, 
-                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                symbolic = True)
 
     try:
-        tune_case(bwr_tuner)
+        tune_case(htgr_tuner)
     except Exception as e:
-        print(f'BWR tuner skipped! Error: {e}')
+        print(f'Tuner skipped! Error: {e}')
     try:
-        tune_case(mitr_B_tuner)
+        tune_case(chf_tuner)
     except Exception as e:
-        print(f'MITR tuner skipped! Error: {e}')
+        print(f'Tuner skipped! Error: {e}')
+
 
 
 
