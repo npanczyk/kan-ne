@@ -1,7 +1,3 @@
-# class to train the KAN
-# methods to get all necessary metrics (MAE, MAPE, MSE, RMSE, RSMPE, R2)
-# method to print symbolic function
-# method to generate plot
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -46,6 +42,7 @@ class NKAN():
         self.lamb_entropy = params["lamb_entropy"]
         self.lr_1 = params["lr_1"]
         self.lr_2 = params["lr_2"]
+        self.reg_metric = params["reg_metric"]
         self.device = device
         self.seed = seed
         self.data = {
@@ -70,25 +67,16 @@ class NKAN():
             pykan KAN model object: model trained on dataset provided to class
         """
         model = self.model
-        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
+        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1, reg_metric=self.reg_metric)
         print("Model trained.")
         model = model.prune()
-        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, update_grid=False)
+        model.fit(self.data, opt='LBFGS', steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_2, reg_metric=self.reg_metric, update_grid=False)
         print("Model pruned and re-trained.")
         if not os.path.exists('models'):
             os.makedirs('models')
         if save:
             model.saveckpt(f'models/{save_as}')
         return model
-
-    # def fit(self, opt='LBFGS'):
-    #     data = {
-    #         'train_input':self.dataset['train_input'],
-    #         'train_label':self.dataset['train_output'],
-    #         'test_input':self.dataset['test_input'],
-    #         'test_label':self.dataset['test_output']
-    #     }
-    #     super().fit(data, opt, steps=self.steps, lamb=self.lamb, lamb_entropy=self.lamb_entropy, lr=self.lr_1)
     
     def refine(self, model, grids, save_as=f'refine_{str(datetime.now())}'):
         """Makes a plot to check overfitting while training a model from scratch. 
@@ -188,6 +176,7 @@ class NKAN():
         start = time.time()
         # this permanently converts activation functions
         model.auto_symbolic(lib=lib, weight_simple=simple)
+        # this whole chunk is just writing the equations to a file
         if not os.path.exists('equations'):
             os.makedirs('equations')
         f = open(f"equations/{save_as}_equation.txt", "w")
@@ -207,6 +196,7 @@ class NKAN():
             f.write(output +' = '+ clean_formula)
             f.write("\n")
         f.close()
+        # get the conversion time
         end = time.time()
         # generate and save the metrics here!
         if metrics:
@@ -269,17 +259,3 @@ class NKAN():
             os.makedirs('figures')
         fig.savefig(f'figures/{save_as}.png', dpi=300)
         return importances
-
-if __name__=="__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    test_name = 'HTGR_tpe_250211'
-    dataset  = get_htgr(cuda=True)
-    mitr_params = {'depth': 2, 'grid': 4, 'k': 4, 'lamb': 0.00013821835586671683, 'lamb_entropy': 4.21645832233589, 'lr_1': 1.75, 'lr_2': 2, 'steps': 125}
-    htgr_params = {'depth': 1, 'grid': 4, 'k': 8, 'lamb': 0.00026409167469123175, 'lamb_entropy': 2.7923722866435723, 'lr_1': 2, 'lr_2': 1, 'steps': 75}
-    test_kan = NKAN(dataset=dataset, seed=42, device=device, params=htgr_params)
-    model = test_kan.get_model()
-    #equation = test_kan.get_equation(model, test_name, metrics=True)
-    metrics = test_kan.get_metrics(model, test_name)
-    #importances = test_kan.get_importances(model, test_name)
-    # delete model folder at the end of the run
-    shutil.rmtree("model")
