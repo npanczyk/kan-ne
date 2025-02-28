@@ -8,11 +8,15 @@ def sort_params(params_file, r2_file, short=True):
             params.append(eval(line))
     df = pd.DataFrame.from_dict(params)
     with open(r2_file) as f2:
-        r2_list = []
+        r2_list_spline = []
+        r2_list_sym = []
         for line in f2:
-            r2_list.append(np.round(float(line.removeprefix("AVG R2 SCORE:").lstrip().strip()), 5))
-    df['AVG R2'] = r2_list
-    df.sort_values(by='AVG R2', ascending=False, inplace=True)
+            r2s = line.split(',')
+            r2_list_spline.append(np.round(float(r2s[0].removeprefix("AVG R2 SCORE:").lstrip().strip()), 5))
+            r2_list_sym.append(np.round(float(r2s[1].lstrip().removeprefix("SYMBOLIC:").strip()), 5))
+    df['SPLINE AVG R2'] = r2_list_spline
+    df['SYMBOLIC AVG R2'] = r2_list_sym
+    df.sort_values(by='SYMBOLIC AVG R2', ascending=False, inplace=True)
     if short:
         df = df[0:10]
         to_latex = df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True)
@@ -28,8 +32,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/HTGR_Q4n_250220/HTGR_Q4n_250220_params.txt"
-    r2_file = "hyperparameters/HTGR_Q4n_250220/HTGR_Q4n_250220_R2.txt"
+    params_file = "hyperparameters/HTGR_test/HTGR_test_params.txt"
+    r2_file = "hyperparameters/HTGR_test/HTGR_test_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],
