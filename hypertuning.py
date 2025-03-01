@@ -128,28 +128,36 @@ class Tuner():
             r2s = np.array(r2s)
             avg_r2 = np.mean(r2s)
             if self.symbolic:
-                n_outputs = len(self.dataset['output_labels'])
-                num_vars = len(self.dataset['feature_labels'])
-                # convert activation functions to symbolic expressions
-                # hold simple at 0 to maximize R2, can be reduced later
-                model.auto_symbolic(lib=None, weight_simple=0)
-                # get ROUNDED symbolic metrics
-                expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
-                y_sym = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
-                sym_r2s = []
-                for i in range(n_outputs):
-                    ysi_test = y_test[:, i]
-                    ysi_pred = y_sym[:, i]
-                    sym_r2s.append(r2_score(ysi_test, ysi_pred))
-                sym_r2s = np.array(sym_r2s)
-                sym_r2 = np.mean(sym_r2s)
-                # keeping track of our avg R2 scores for each run
-                with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
-                    results.write(f"AVG R2 SCORE: {avg_r2}, SYMBOLIC: {sym_r2}\n")
-                # delete model folder at the end of the run
-                shutil.rmtree("model")
-                # calculate a weighted average of spline and symbolic scores
-                return -1 * (0.2*avg_r2 + 0.8*sym_r2)
+                try:
+                    n_outputs = len(self.dataset['output_labels'])
+                    num_vars = len(self.dataset['feature_labels'])
+                    # convert activation functions to symbolic expressions
+                    # hold simple at 0 to maximize R2, can be reduced later
+                    model.auto_symbolic(lib=None, weight_simple=0)
+                    # get ROUNDED symbolic metrics
+                    expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
+                    y_sym = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
+                    sym_r2s = []
+                    for i in range(n_outputs):
+                        ysi_test = y_test[:, i]
+                        ysi_pred = y_sym[:, i]
+                        sym_r2s.append(r2_score(ysi_test, ysi_pred))
+                    sym_r2s = np.array(sym_r2s)
+                    sym_r2 = np.mean(sym_r2s)
+                    # keeping track of our avg R2 scores for each run
+                    with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
+                        results.write(f"AVG R2 SCORE: {avg_r2}, SYMBOLIC: {sym_r2}\n")
+                    # delete model folder at the end of the run
+                    shutil.rmtree("model")
+                    # calculate a weighted average of spline and symbolic scores
+                    return -1 * (0.2*avg_r2 + 0.8*sym_r2)
+                except:
+                    with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
+                        results.write(f"AVG R2 SCORE: {avg_r2}, SYMBOLIC: NaN\n")
+                    # delete model folder at the end of the run
+                    shutil.rmtree("model")
+                    # calculate a weighted average of spline and symbolic scores
+                    return 10
             else:
                 # keeping track of our avg R2 scores for each run
                 with open(f"hyperparameters/{self.run_name}/{self.run_name}_R2.txt", "a") as results:
@@ -206,7 +214,7 @@ if __name__ == "__main__":
     # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
     chf_tuner = Tuner(
                 dataset = get_chf(cuda=True), 
-                run_name = "CHF_250228", 
+                run_name = "CHF_250301", 
                 space = set_space(), 
                 max_evals = 200, 
                 seed = 42, 
@@ -215,7 +223,16 @@ if __name__ == "__main__":
 
     htgr_tuner = Tuner(
                 dataset = get_htgr(cuda=True), 
-                run_name = "HTGR_250228", 
+                run_name = "HTGR_250301", 
+                space = set_space(), 
+                max_evals = 200, 
+                seed = 42, 
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                symbolic = True)
+
+    fp_tuner = Tuner(
+                dataset = get_fp(cuda=True), 
+                run_name = "FP_250301", 
                 space = set_space(), 
                 max_evals = 200, 
                 seed = 42, 
@@ -228,6 +245,10 @@ if __name__ == "__main__":
         print(f'Tuner skipped! Error: {e}')
     try:
         tune_case(chf_tuner)
+    except Exception as e:
+        print(f'Tuner skipped! Error: {e}')
+    try:
+        tune_case(fp_tuner)
     except Exception as e:
         print(f'Tuner skipped! Error: {e}')
 

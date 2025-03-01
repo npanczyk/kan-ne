@@ -73,7 +73,7 @@ def get_chf(synthetic=False, cuda=False):
     return dataset
 
 
-def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
+def get_mitr(test_split=0.3, random_state=42, cuda=False, region='FULL'):
     """Gets MIT microreactor data. Six features (six control blade hights) and 22 outputs (power produced by each fuel element in the core).
 
     Args:
@@ -85,7 +85,7 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region=None):
     Returns:
         dict: a dictionary containing four PyTorch tensors (train_input, train_output, test_input, test_output), y scaler, and feature/output labels.
     """
-    if region is None:
+    if region.upper() == 'FULL':
         output_cols = ['A-2','B-1','B-2','B-4','B-5','B-7','B-8','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11','C-12','C-13','C-14','C-15']
     elif region.upper() == 'A':
         output_cols = ['A-2']

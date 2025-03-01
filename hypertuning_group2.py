@@ -9,30 +9,31 @@ import shutil
 import os
 from hypertuning import *
 torch.set_default_dtype(torch.float64)
+import datetime as dt
 
 if __name__ == "__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"]="1"
-    mitr_C_tuner = Tuner(
-                    dataset = get_mitr(cuda=True, region='C'), 
-                    run_name = "MITR_C_250224", 
-                    space = set_space(), 
-                    max_evals = 150, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    mitr_tuner = Tuner(
-                    dataset = get_mitr(cuda=True), 
-                    run_name = "MITR_full_250224", 
-                    space = set_space(), 
-                    max_evals = 150, 
-                    seed = 42, 
-                    device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    regions = ['A', 'B', 'C', 'FULL']
+    datasets_dict = {
+        'xs': get_xs,
+        'bwr': get_bwr,
+        'heat': get_heat,
+        'rea': get_rea
+    }
+    for region in regions:
+        datasets_dict[f'mitr_{region}'] = partial(get_mitr, region=region)
+    for model, dataset in datasets_dict.items():
+        print(f'MODEL: {model}')    
+        tuner = Tuner(
+                        dataset = dataset(cuda=True), 
+                        run_name = f"{model.upper()}_{str(dt.date.today())}", 
+                        space = set_space(), 
+                        max_evals = 1, 
+                        seed = 42, 
+                        device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        try:
+            tune_case(tuner)
+        except Exception as e:
+            print(f"{model.upper()} TUNING INTERRUPTED! Error: {e}")     
 
-    try:
-        tune_case(mitr_C_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR C stopped prematurely. Error: {e}")     
-    try:
-        tune_case(mitr_tuner)
-    except Exception as e:
-        print(f"TUNING INTERRUPTED! MITR stopped prematurely. Error: {e}")
    

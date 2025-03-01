@@ -9,7 +9,7 @@ chf_TEST = {'depth': 3, 'grid': 8, 'k': 8, 'lamb': 3.3619635794339965e-07, 'lamb
 fp_best = {'depth': 1, 'grid': 4, 'k': 8, 'lamb': 1.4831135449453957e-07, 'lamb_entropy': 1.8089227877236496, 'lr_1': 1.5, 'lr_2': 1.25, 'steps': 125}
 bwr_best = {'depth': 1, 'grid': 10, 'k': 2, 'lamb': 3.0698178578908114e-05, 'lamb_entropy': 0.886893553328925, 'lr_1': 1.5, 'lr_2': 1, 'steps': 225}
 heat_best = {'depth': 1, 'grid': 5, 'k': 2, 'lamb': 0.00013095361343762514, 'lamb_entropy': 4.352418097964702, 'lr_1': 1.75, 'lr_2': 1.25, 'steps': 150}
-htgr_best = {'depth': 3, 'grid': 5, 'k': 4, 'lamb': 2.63584570163326e-06, 'lamb_entropy': 3.02497466094173, 'lr_1': 0.75, 'lr_2': 1.5, 'steps': 75}
+htgr_best = {'depth': 2, 'grid': 4, 'k': 4, 'lamb': 1.672608746032322e-06, 'lamb_entropy': 6.450450937378819, 'lr_1': 0.75, 'lr_2': 1, 'reg_metric': 'edge_forward_spline_n', 'steps': 50}
 mitr_a_best = {'depth': 2, 'grid': 5, 'k': 3, 'lamb': 6.901006219885579e-06, 'lamb_entropy': 2.677506734155999, 'lr_1': 2, 'lr_2': 1.25, 'steps': 150}
 mitr_b_best = {'depth': 1, 'grid': 6, 'k': 2, 'lamb': 1.8321755739060752e-06, 'lamb_entropy': 2.6597667019837576, 'lr_1': 2, 'lr_2': 0.5, 'steps': 75}
 mitr_c_best = None
@@ -21,30 +21,16 @@ xs_best = {'depth': 1, 'grid': 5, 'k': 6, 'lamb': 6.618155426602294e-06, 'lamb_e
 def run_model(device, dataset, params, run_name, lib=None):
     kan = NKAN(dataset, 42, device, params)
     model = kan.get_model()
-    model = model.prune()
-    model.saveckpt(f'models/{run_name}')
     spline_metrics = kan.get_metrics(model, run_name)
     equation = kan.get_equation(model, run_name, simple=0, lib=None, metrics=True)
     importances = kan.get_importances(model, run_name)
     return
 
-def test_libs(device, dataset, params, run_name):
-    kan = NKAN(dataset, 42, device, params)
-    model = kan.get_model(save_as=run_name)
-    print('model saved.')
-    lib0 = ['x','x^2','x^3','x^4', '1/x', 'exp','log','sqrt','sin', 'cos','tan','abs', 'sgn']
-    lib1 = ['x', 'x^2', 'x^3', 'x^4', 'x^5', '1/x', '1/x^2', '1/x^3', '1/x^4', '1/x^5', 'sqrt', 'x^0.5', 'x^1.5', '1/sqrt(x)', '1/x^0.5', 'exp', 'log', 'abs', 'sin', 'cos', 'tan', 'sgn']
-    lib2 = ['x', 'x^2', 'x^3', 'x^4', 'x^5', '1/x', '1/x^2', '1/x^3', '1/x^4', '1/x^5', 'sqrt', 'x^0.5', 'x^1.5', '1/sqrt(x)', '1/x^0.5', 'exp', 'log', 'abs', 'sin', 'cos', 'tan', 'tanh', 'sgn', 'arcsin', 'arccos', 'arctan', 'arctanh', '0', 'gaussian']
-    libs = [lib0, lib1, lib2]
-    for i, lib in enumerate(libs):
-        kan.loadckpt(f'models/{run_name}')
-        print('model loaded.')
-        kan.get_equation(model, f'run_name_{i}', lib, metrics=True)
-    return
 
 if __name__=="__main__":
-    shutil.rmtree("model")
+    if os.path.exists('model'):
+        shutil.rmtree("model")
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    run_model(device, get_chf(cuda=True), chf_best, 'chf_022625')
+    run_model(device, get_htgr(cuda=True), htgr_best, 'htgr_250301')
 

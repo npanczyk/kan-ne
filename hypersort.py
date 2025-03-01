@@ -17,6 +17,15 @@ def sort_params(params_file, r2_file, short=True):
     df['SPLINE AVG R2'] = r2_list_spline
     df['SYMBOLIC AVG R2'] = r2_list_sym
     df.sort_values(by='SYMBOLIC AVG R2', ascending=False, inplace=True)
+    reg_dict = {
+        "edge_forward_spline_n":"EFSN",
+        "edge_forward_sum":"EFS",
+        "edge_forward_spline_u":"EFSU",
+        "edge_backward":"EB",
+        "node_backward":"NB"
+    }
+    for label in reg_dict.keys():
+        df.replace(label, reg_dict[label], inplace=True)
     if short:
         df = df[0:10]
         to_latex = df.to_latex(float_format="%.5f", formatters={"lamb": lambda x: f"{x:.3e}"}, longtable=True)
@@ -32,8 +41,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/HTGR_test/HTGR_test_params.txt"
-    r2_file = "hyperparameters/HTGR_test/HTGR_test_R2.txt"
+    params_file = "hyperparameters/HTGR_250228/HTGR_250228_params.txt"
+    r2_file = "hyperparameters/HTGR_250228/HTGR_250228_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],
