@@ -15,10 +15,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     regions = ['A', 'B', 'C', 'FULL']
     datasets_dict = {
-        'xs': get_xs,
-        'bwr': get_bwr,
         'heat': get_heat,
-        'rea': get_rea
     }
     for region in regions:
         datasets_dict[f'mitr_{region}'] = partial(get_mitr, region=region)
@@ -28,9 +25,10 @@ if __name__ == "__main__":
                         dataset = dataset(cuda=True), 
                         run_name = f"{model.upper()}_{str(dt.date.today())}", 
                         space = set_space(), 
-                        max_evals = 1, 
+                        max_evals = 200, 
                         seed = 42, 
-                        device = torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                        device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+                        symbolic = True)
         try:
             tune_case(tuner)
         except Exception as e:
