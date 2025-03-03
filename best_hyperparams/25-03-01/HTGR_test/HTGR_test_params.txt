@@ -1,0 +1,2 @@
+{'depth': 1, 'grid': 7, 'k': 3, 'lamb': 0.00012684388114291557, 'lamb_entropy': 0.8826950392753974, 'lr_1': 0.75, 'lr_2': 1.25, 'reg_metric': 'node_backward', 'steps': 100}
+{'depth': 1, 'grid': 5, 'k': 5, 'lamb': 0.0009080498542645877, 'lamb_entropy': 2.253496246808587, 'lr_1': 1.75, 'lr_2': 1.5, 'reg_metric': 'edge_forward_sum', 'steps': 150}
