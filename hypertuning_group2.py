@@ -13,9 +13,9 @@ import datetime as dt
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
-    regions = ['A', 'B', 'C', 'FULL']
+    regions = ['A', 'FULL']
     datasets_dict = {
-        'heat': get_heat,
+        'heat': get_bwr,
     }
     for region in regions:
         datasets_dict[f'mitr_{region}'] = partial(get_mitr, region=region)

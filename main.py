@@ -132,28 +132,8 @@ class NKAN():
         else:
             y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
             y_pred = scaler.inverse_transform(Y_pred.detach().numpy())  # unscaled
-
-        metrics = {
-            'OUTPUT':self.dataset['output_labels'],
-            'MAE':[],
-            'MAPE':[],
-            'MSE':[],
-            'RMSE':[],
-            'RMSPE':[],
-            'R2':[]
-        }
-        for i in range(len(self.dataset['output_labels'])):
-            # get metrics for each output
-            yi_test = y_test[:,i]
-            yi_pred = y_pred[:,i]
-            metrics['MAE'].append(round(mean_absolute_error(yi_test, yi_pred), p))
-            metrics['MAPE'].append(round(mape(yi_test, yi_pred), p))
-            metrics['MSE'].append(round(mean_squared_error(yi_test, yi_pred), p))
-            metrics['RMSE'].append(round(np.sqrt(mean_squared_error(yi_test, yi_pred)), p))
-            metrics['RMSPE'].append(round(rmspe(yi_test, yi_pred), p))
-            metrics['R2'].append(round(r2_score(yi_test, yi_pred),p))
-        metrics_df = pd.DataFrame.from_dict(metrics)
-        # check to see fi there 
+        metrics_df = metrics(self.dataset['output_labels'], y_test, y_pred, p)
+        # check to see if results folder exists 
         if not os.path.exists('results'):
             os.makedirs('results')
         metrics_df.to_csv(f'results/{save_as}.csv', index=False)
@@ -162,7 +142,7 @@ class NKAN():
     def get_schematic():
         return 
 
-    def get_equation(self, model, save_as, simple=0.8, lib=None, metrics=False):
+    def get_equation(self, model, save_as, simple=0.8, lib=None):
         """Converts splines into symbolic functions for the model object. Saves symbolic functions for each output to a text file under /equations. If metrics, calculates and saves symbolic metrics to a file under /results.
 
         Args:
@@ -176,67 +156,40 @@ class NKAN():
         start = time.time()
         # this permanently converts activation functions
         model.auto_symbolic(lib=lib, weight_simple=simple)
+        # get the conversion time
+        end = time.time()
         # this whole chunk is just writing the equations to a file
         if not os.path.exists('equations'):
             os.makedirs('equations')
         f = open(f"equations/{save_as}_equation.txt", "w")
+        variable_map = get_variable_map(self.dataset['feature_labels'])
         for i, output in enumerate(self.dataset['output_labels']):
             formula = model.symbolic_formula()[0][i]
             # round all the coefficients
             clean_formula = str(ex_round(formula, 4))
-            variable_map = get_variable_map()
-            n_features = len(self.dataset['feature_labels'])
-            for j in range(n_features):
-                # go in descending order here to make sure x_11 gets subbed before x_1
-                variable_map[f'x_{n_features - j}'] = self.dataset['feature_labels'][n_features-j-1]
-            variable_map['_'] = '\\_'
-            print( f'VARIABLE MAP: {variable_map}' )
             for char, replacement in variable_map.items():
                 clean_formula = clean_formula.replace(char,replacement)
             f.write(output +' = '+ clean_formula)
             f.write("\n")
         f.close()
-        # get the conversion time
-        end = time.time()
         # generate and save the metrics here!
-        if metrics:
-            p = 4
-            scaler = self.dataset['y_scaler']
-            X_test = self.dataset['test_input'] # still scaled
-            Y_test = self.dataset['test_output'] # still scaled
-            num_vars = len(self.dataset['feature_labels'])
-            if str(self.device) == "cuda":
-                y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
-            else:
-                y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
-            metrics = {
-                'OUTPUT':self.dataset['output_labels'],
-                'MAE':[],
-                'MAPE':[],
-                'MSE':[],
-                'RMSE':[],
-                'RMSPE':[],
-                'R2':[],
-                'CONVERSION TIME [s]': end - start
-            }
-            expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
-            y_pred = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
-            for i in range(n_outputs):
-                # get metrics for each output
-                yi_test = y_test[:,i]
-                yi_pred = y_pred[:,i]
-                metrics['MAE'].append(round(mean_absolute_error(yi_test, yi_pred), p))
-                metrics['MAPE'].append(round(mape(yi_test, yi_pred), p))
-                metrics['MSE'].append(round(mean_squared_error(yi_test, yi_pred), p))
-                metrics['RMSE'].append(round(np.sqrt(mean_squared_error(yi_test, yi_pred)), p))
-                metrics['RMSPE'].append(round(rmspe(yi_test, yi_pred), p))
-                metrics['R2'].append(round(r2_score(yi_test, yi_pred),p))
-            metrics_df = pd.DataFrame.from_dict(metrics)
-            # check to see fi there 
-            if not os.path.exists('results'):
-                os.makedirs('results')
-            metrics_df.to_csv(f'results/{save_as}_symetrics.csv', index=False)
-            print(metrics_df)
+        scaler = self.dataset['y_scaler']
+        X_test = self.dataset['test_input'] # still scaled
+        Y_test = self.dataset['test_output'] # still scaled
+        num_vars = len(self.dataset['feature_labels'])
+        n_outputs = len(self.dataset['output_labels'])
+        if str(self.device) == "cuda":
+            y_test = scaler.inverse_transform(Y_test.cpu().detach().numpy())  # unscaled
+        else:
+            y_test = scaler.inverse_transform(Y_test.detach().numpy())  # unscaled
+        expressions = [ex_round(model.symbolic_formula()[0][i], 4) for i in range(n_outputs)]
+        y_pred = y_pred_sym(expressions, num_vars, X_test, scaler, str(self.device))
+        metrics_df = metrics(self.dataset['output_labels'], y_test, y_pred, p=4)
+        metrics_df['CONVERSION_TIME'] = end - start
+        # save symbolic metrics to results 
+        if not os.path.exists('results'):
+            os.makedirs('results')
+        metrics_df.to_csv(f'results/{save_as}_symetrics.csv', index=False)
         return expressions
 
     def get_importances(self, model, save_as):

@@ -1,6 +1,9 @@
 import numpy as np
+import pandas as pd
 from sympy import symbols, sympify, lambdify
 import torch
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+torch.set_default_dtype(torch.float64)
 
 def rmspe(ytest, ypred):
     """Generates root mean square percentage error.
@@ -28,54 +31,29 @@ def mape(ytest, ypred):
     return np.mean(np.abs((ytest - ypred)/ytest))*100
 
 
-def get_variable_map():
-    map = {
+def get_variable_map(feature_labels):
+    variable_map = {
         'sqrt':'\\sqrt', 
         'exp':'\\exp', 
         'log':'\\log', 
-        'abs': '\\abs', 
+        'abs': '\\abs',
+        'asin':'\\arcsin', 
+        'acos':'\\arccos', 
+        'atan':'\\arctan', 
+        'atanh':'\\arctanh', 
         'sin':'\\sin',
         'cos':'\\cos', 
         'tan':'\\tan', 
         'tanh':'\\tanh', 
-        'asin':'\\arcsin', 
-        'acos':'\\arccos', 
-        'atan':'\\arctan', 
-        'atanh':'\\arctanh',
-        '**':'^'
+        '**':'^',
     }
-    return map
+    n_features = len(feature_labels)
+    for j in range(n_features):
+        # go in descending order here to make sure x_11 gets subbed before x_1
+        variable_map[f'x_{n_features - j}'] = feature_labels[n_features-j-1]
+    variable_map['_'] = '\\_'
+    return variable_map
 
-# def y_pred_sym(expressions, num_vars, X_test, scaler, device):
-#     """Gets predictions based on X_test and a symbolic expression
-
-#     Args:
-#         symbolic_expr (str): A symbolic expression for the output of interest. Variables must be of the form: x_1, x_2,..., x_n for n features. 
-#         num_vars (int): The number of features in the dataset of interest
-#         X_test (pytorch tensor): _description_
-#         scaler (sklearn object): Y scaler for transformed data
-
-#     Returns:
-#         list: An unscaled prediction for each X test value
-#     """
-#     Y_preds = np.zeros((X_test.shape[0], len(expressions)))
-#     for i, expression in enumerate(expressions):
-#         variables = symbols('x_1:%d' % (num_vars + 1))
-#         Y_pred_sym = [] # scaled predictions based on symbolic expression
-#         # NOT SURE WHY THIS WORKED BUT X_test TRANSFERS ITSELF to CPU?
-#         # if device == "cuda":
-#         #     print(type(X_test))
-#         #     print(X_test)
-#         #     X_test = X_test.cpu().detach().numpy()
-#         # else:
-#         #     X_test = X_test.detach().numpy()
-#         for row in X_test:
-#             inputs = {variable: value for variable, value in zip(variables, row)}
-#             Y_pred_sym.append(float(expression.subs(inputs).evalf()))
-#         Y_pred_sym = np.array(Y_pred_sym).reshape(-1, 1)
-#         Y_preds[:, i] = Y_pred_sym.flatten()
-#     y_pred_sym = scaler.inverse_transform(Y_preds)
-#     return y_pred_sym
 
 
 def y_pred_sym(expressions, num_vars, X_test, scaler, device):
@@ -108,3 +86,36 @@ def y_pred_sym(expressions, num_vars, X_test, scaler, device):
 
     y_pred_sym = scaler.inverse_transform(Y_preds)
     return y_pred_sym
+
+def metrics(output_labels, y_test, y_pred, p):
+    """Generates a metrics dataframe when given a test set and a predicted set.
+
+    Args:
+        output_labels (list): The model's output names
+        y_test (NumPy Array): test set, an array of unscaled values for each output
+        y_pred (NumPy Arra): an array of unscaled values, as predicted by the model, for each output
+        p (int): precision (number of decimal places to round metrics to)
+
+    Returns:
+        pandas DataFrame: a DataFrame containing MAE, MAPE, MSE, RMSE, RMSPE, and R2 values for the model's predictions of the test set
+    """
+    metrics = {
+            'OUTPUT':output_labels,
+            'MAE':[],
+            'MAPE':[],
+            'MSE':[],
+            'RMSE':[],
+            'RMSPE':[],
+            'R2':[]
+        }
+    for i in range(len(output_labels)):
+        # get metrics for each output
+        yi_test = y_test[:,i]
+        yi_pred = y_pred[:,i]
+        metrics['MAE'].append(round(mean_absolute_error(yi_test, yi_pred), p))
+        metrics['MAPE'].append(round(mape(yi_test, yi_pred), p))
+        metrics['MSE'].append(round(mean_squared_error(yi_test, yi_pred), p))
+        metrics['RMSE'].append(round(np.sqrt(mean_squared_error(yi_test, yi_pred)), p))
+        metrics['RMSPE'].append(round(rmspe(yi_test, yi_pred), p))
+        metrics['R2'].append(round(r2_score(yi_test, yi_pred),p))
+    return pd.DataFrame.from_dict(metrics)

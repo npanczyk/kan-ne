@@ -23,7 +23,7 @@ def sort_params(params_file, r2_file, short=True):
         "edge_forward_spline_u":"EFSU",
         "edge_backward":"EB",
         "node_backward":"NB"
-    }
+    } 
     for label in reg_dict.keys():
         df.replace(label, reg_dict[label], inplace=True)
     df['lr_1'] = df['lr_1'].apply(lambda x: f'{x:.2f}'.rstrip('0').rstrip('.'))
@@ -43,8 +43,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "best_hyperparams/symbolic/FP_250301/FP_250301_params.txt"
-    r2_file = "best_hyperparams/symbolic/FP_250301/FP_250301_R2.txt"
+    params_file = "hyperparameters/XS_2025-03-02/XS_2025-03-02_params.txt"
+    r2_file = "hyperparameters/XS_2025-03-02/XS_2025-03-02_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],
