@@ -51,8 +51,7 @@ def get_variable_map(feature_labels):
     n_features = len(feature_labels)
     for j in range(n_features):
         # go in descending order here to make sure x_11 gets subbed before x_1
-        variable_map[f'x_{n_features - j}'] = feature_labels[n_features-j-1]
-    variable_map['_'] = '\\_'
+        variable_map[f'x_{{{n_features - j}}}'] = f'\\mathit{{{feature_labels[n_features-j-1]}}}'
     return variable_map
 
 
@@ -79,7 +78,6 @@ def y_pred_sym(expressions, num_vars, X_test, scaler, device):
         numerical_function = lambdify(variables, expression, 'numpy')
         
         # make sure X_test is pushed to cpu and converted to numpy
-        print(f'X_test type: {type(X_test)}')
         if isinstance(X_test, torch.Tensor):
             X_test = X_test.detach().cpu().numpy() 
         Y_pred_sym = numerical_function(*X_test.T)

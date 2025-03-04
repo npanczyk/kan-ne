@@ -41,6 +41,6 @@ if __name__=="__main__":
     with open(equation_file) as file:
         for output in output_names:
             save_as = f'TEST_output'
-            expr = file.readline().split('=')[1].lstrip()
+            expr = file.readline()
             print(expr)
     #symbolic_FI(expr, X_test, Y_test, input_names, output_names, save_as, range=10)

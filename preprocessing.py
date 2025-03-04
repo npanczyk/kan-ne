@@ -1,8 +1,3 @@
-# figure out what you want to keep from the pyMAISE _handler.py file
-# need to write a class to load datsets, split into training and testing, scale
-# the datasets, convert them into Torch tensors, and then create a dataset
-# directory
-
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -66,7 +61,7 @@ def get_chf(synthetic=False, cuda=False):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['D', 'L', 'P', 'G', 'Tin', 'Xe'],
+        'feature_labels': ['D', 'L', 'P', 'G', 'T_in', 'Xe'],
         'output_labels': ['CHF'],
         'y_scaler': scaler_Y
     }
@@ -124,7 +119,7 @@ def get_mitr(test_split=0.3, random_state=42, cuda=False, region='FULL'):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['CR1', 'CR2', 'CR3', 'CR4', 'CR5', 'CR6'],
+        'feature_labels': ['CR_1', 'CR_2', 'CR_3', 'CR_4', 'CR_5', 'CR_6'],
         'output_labels': output_cols,
         'y_scaler': scaler_Y
     }
@@ -182,7 +177,7 @@ def get_xs(test_split=0.3, random_state=42, cuda=False):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['FissionFast', 'CaptureFast', 'FissionThermal', 'CaptureThermal', 'Scatter12', 'Scatter11', 'Scatter21', 'Scatter22'],
+        'feature_labels': ['fission_fast', 'capture_fast', 'fission_thermal', 'capture_thermal', 'scatter_12', 'scatter_11', 'scatter_21', 'scatter_22'],
         'output_labels': ['k'],
         'y_scaler': scaler_Y
     }
@@ -252,7 +247,7 @@ def get_fp(test_split=0.3, random_state=42, cuda=False):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['fuel_dens', 'porosity', 'clad_thick', 'pellet_OD', 'pellet_h', 'gap_thickness', 'inlet_T', 'enrich', 'rough_fuel', 'rough_clad', 'ax_pow', 'clad_T', 'pressure'],
+        'feature_labels': ['fuel_density', 'porosity', 'thickness_clad', 'pellet_OD', 'pellet_h', 'thickness_gap', 'T_inlet', 'enrich', 'fuel_rough', 'clad_rough', 'power_ax', 'T_clad', 'pressure'],
         'output_labels': ['fission_gas', 'max_fuel_cl_T', 'max_fuel_surf_T', 'radial_clad_T'],
         'y_scaler': scaler_Y
     }
@@ -307,7 +302,7 @@ def get_heat(test_split=0.3, random_state=42, cuda=False):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['qprime', 'mdot', 'Tin', 'R', 'L', 'Cp', 'k'],
+        'feature_labels': ['qprime', 'mdot', 'T_in', 'R', 'L', 'C_p', 'k'],
         'output_labels': ['T'],
         'y_scaler': scaler_Y
     }
@@ -439,7 +434,7 @@ def get_bwr(test_split=0.3, random_state=42, cuda=False):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['PSZ', 'DOM', 'vanA', 'vanB', 'subcool', 'CRD', 'flow_rate', 'power_density', 'VFNGAP'],
+        'feature_labels': ['PSZ', 'DOM', 'vanA', 'vanB', 'subcool', 'CRD', 'FlowRate', 'PowerDensity', 'VFNGAP'],
         'output_labels': ['K-eff', 'Max3Pin', 'Max4Pin', 'F-delta-H', 'Max-Fxy'],
         'y_scaler': scaler_Y
     }
@@ -481,7 +476,7 @@ def get_htgr(random_state=42, cuda=False, quadrant=None):
         'train_output': train_output,
         'test_input': test_input,
         'test_output': test_output,
-        'feature_labels': ['theta1','theta2','theta3','theta4','theta5','theta6','theta7','theta8'],
+        'feature_labels': ['theta_1','theta_2','theta_3','theta_4','theta_5','theta_6','theta_7','theta_8'],
         'output_labels': flux_cols,
         'y_scaler': scaler_Y
     }

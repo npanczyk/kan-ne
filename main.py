@@ -7,7 +7,7 @@ from kan import *
 from kan.utils import ex_round
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
-from sympy import symbols, sympify, printing
+from sympy import symbols, sympify, latex
 from preprocessing import *
 from accessories import *
 from plotting import plot_feature_importances, plot_overfitting
@@ -161,19 +161,24 @@ class NKAN():
         # this whole chunk is just writing the equations to a file
         if not os.path.exists('equations'):
             os.makedirs('equations')
-        f = open(f"equations/{save_as}_equation.txt", "w")
+        sym_file = open(f"equations/{save_as}.txt", "w")
+        tex_file = open(f"equations/{save_as}_latex.txt", "w")
         variable_map = get_variable_map(self.dataset['feature_labels'])
+        print(variable_map)
         for i, output in enumerate(self.dataset['output_labels']):
             formula = model.symbolic_formula()[0][i]
-            print(f'FORMULA TYPE: {type(formula)}')
             # round all the coefficients
-            # FIGURE OUT HOW TO PRINT TO LATEX W/ SYMPY
-            clean_formula = printing.latex.latex(ex_round(formula, 4))
+            latex_formula = latex(ex_round(formula, 4))
+            sympy_formula = str(ex_round(formula, 4))
             for char, replacement in variable_map.items():
-                clean_formula = clean_formula.replace(char,replacement)
-            f.write(output +' = '+ clean_formula)
-            f.write("\n")
-        f.close()
+                latex_formula = latex_formula.replace(char,replacement)
+            sym_file.write(sympy_formula)
+            sym_file.write("\n")
+            output_as_latex = '\\text{'+str(output)+'}'
+            tex_file.write(output +' = '+ latex_formula)
+            tex_file.write("\n")
+        sym_file.close()
+        tex_file.close()
         # generate and save the metrics here!
         scaler = self.dataset['y_scaler']
         X_test = self.dataset['test_input'] # still scaled
