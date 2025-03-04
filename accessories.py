@@ -32,21 +32,22 @@ def mape(ytest, ypred):
 
 
 def get_variable_map(feature_labels):
-    variable_map = {
-        'sqrt':'\\sqrt', 
-        'exp':'\\exp', 
-        'log':'\\log', 
-        'abs': '\\abs',
-        'asin':'\\arcsin', 
-        'acos':'\\arccos', 
-        'atan':'\\arctan', 
-        'atanh':'\\arctanh', 
-        'sin':'\\sin',
-        'cos':'\\cos', 
-        'tan':'\\tan', 
-        'tanh':'\\tanh', 
-        '**':'^',
-    }
+    # variable_map = {
+    #     'sqrt':'\\sqrt', 
+    #     'exp':'\\exp', 
+    #     'log':'\\log', 
+    #     'abs': '\\abs',
+    #     'asin':'\\arcsin', 
+    #     'acos':'\\arccos', 
+    #     'atan':'\\arctan', 
+    #     'atanh':'\\arctanh', 
+    #     'sin':'\\sin',
+    #     'cos':'\\cos', 
+    #     'tan':'\\tan', 
+    #     'tanh':'\\tanh', 
+    #     '**':'^',
+    # }
+    variable_map = {}
     n_features = len(feature_labels)
     for j in range(n_features):
         # go in descending order here to make sure x_11 gets subbed before x_1

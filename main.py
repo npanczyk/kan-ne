@@ -7,7 +7,7 @@ from kan import *
 from kan.utils import ex_round
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
-from sympy import symbols, sympify
+from sympy import symbols, sympify, printing
 from preprocessing import *
 from accessories import *
 from plotting import plot_feature_importances, plot_overfitting
@@ -165,8 +165,10 @@ class NKAN():
         variable_map = get_variable_map(self.dataset['feature_labels'])
         for i, output in enumerate(self.dataset['output_labels']):
             formula = model.symbolic_formula()[0][i]
+            print(f'FORMULA TYPE: {type(formula)}')
             # round all the coefficients
-            clean_formula = str(ex_round(formula, 4))
+            # FIGURE OUT HOW TO PRINT TO LATEX W/ SYMPY
+            clean_formula = printing.latex.latex(ex_round(formula, 4))
             for char, replacement in variable_map.items():
                 clean_formula = clean_formula.replace(char,replacement)
             f.write(output +' = '+ clean_formula)

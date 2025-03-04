@@ -43,8 +43,8 @@ def print_space(space):
 
 
 if __name__=="__main__":
-    params_file = "hyperparameters/XS_2025-03-02/XS_2025-03-02_params.txt"
-    r2_file = "hyperparameters/XS_2025-03-02/XS_2025-03-02_R2.txt"
+    params_file = "best_hyperparams/symbolic/MITR_A_2025-03-03/MITR_A_2025-03-03_params.txt"
+    r2_file = "best_hyperparams/symbolic/MITR_A_2025-03-03/MITR_A_2025-03-03_R2.txt"
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],
         "grid": ["hp.choice", [4, 5, 6, 7, 8, 9, 10]],
