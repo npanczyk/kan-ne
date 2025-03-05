@@ -6,6 +6,7 @@ import os
 import numpy as np
 from sympy import symbols, sympify, lambdify
 from functools import partial
+import datetime as dt
 
 def symbolic_FI(equation_file, X_test, Y_test, input_names, output_names, save_as, shap_range=300):
     shap_mean = []
@@ -57,11 +58,11 @@ if __name__=="__main__":
         'xs': [get_xs, 'equations/XS_2025-03-05.txt']
     }
     for model, info in datasets_dict.items():
-        dataset = info[0]
+        dataset = info[0](cuda=False)
         X_test = dataset['test_input'].detach().numpy()
         Y_test = dataset['test_output'].detach().numpy()
         input_names = dataset['feature_labels']
         output_names = dataset['output_labels']
         equation_file = info[1]
-        save_as = f"{model.upper()}_{str(dt.date.today())}_SHAP")
+        save_as = f"{model.upper()}_{str(dt.date.today())}_SHAP"
         symbolic_FI(equation_file, X_test, Y_test, input_names, output_names, save_as, shap_range=10)
