@@ -1,0 +1,1 @@
+k = -0.6515 + 3.0884 e^{- 0.252 \left(0.3733 - \frac{1}{\left(- 0.5459 \left(1 - 0.0247 \mathit{capture_fast}\right)^{4} + \left(1 - 0.02 \mathit{fission_thermal}\right)^{3} - 0.3352 \left(1 - 0.02 \mathit{capture_thermal}\right)^{4} - 0.3508 \left(- 0.02 \mathit{fission_fast} - 1\right)^{4} - 0.4368 \left(- 0.02 \mathit{scatter_12} - 1\right)^{4} - 0.1187\right)^{4}}\right)^{2}}
