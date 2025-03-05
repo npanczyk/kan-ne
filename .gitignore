@@ -171,8 +171,6 @@ cython_debug/
 datasets/chf_train.csv
 datasets/chf_valid.csv
 model/
-figures/
-equations/
 scratch.ipynb
 hyperparameters/
 prune_success.txt

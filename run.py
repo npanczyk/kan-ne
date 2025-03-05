@@ -4,6 +4,7 @@ import shutil
 import os
 from kan import *
 import datetime as dt
+from functools import partial
 
 fp_best = {'depth': 1, 'grid': 8, 'k': 7, 'lamb': 2.0426962767412815e-05, 'lamb_entropy': 5.0346373804560525, 'lr_1': 1.5, 'lr_2': 1.75, 'reg_metric': 'edge_forward_sum', 'steps': 75}
 bwr_best = {'depth': 1, 'grid': 7, 'k': 2, 'lamb': 0.0008912210456241697, 'lamb_entropy': 7.488094627223641, 'lr_1': 1.75, 'lr_2': 1.25, 'reg_metric': 'edge_forward_sum', 'steps': 125}
@@ -31,17 +32,17 @@ if __name__=="__main__":
         shutil.rmtree("model")
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     datasets_dict = {
-        'fp': [get_fp, fp_best],
-        # 'bwr': [get_bwr, bwr_best],
-        # 'heat': [get_heat, heat_best],
-        # 'htgr': [get_htgr, htgr_best],
-        # 'mitr_a': [partial(get_mitr, region='A'), mitr_a_best],
-        # 'mitr_b': [partial(get_mitr, region='B'), mitr_b_best],
-        # 'mitr_c': [partial(get_mitr, region='C'), mitr_c_best],
-        # 'mitr': [partial(get_mitr, region='FULL'), mitr_best],
-        # 'chf': [get_chf, chf_best],
-        # 'rea': [get_rea, rea_best],
-        # 'xs': [get_xs, xs_best]
+        # 'fp': [get_fp, fp_best],
+        'bwr': [get_bwr, bwr_best],
+        'heat': [get_heat, heat_best],
+        'htgr': [get_htgr, htgr_best],
+        'mitr_a': [partial(get_mitr, region='A'), mitr_a_best],
+        'mitr_b': [partial(get_mitr, region='B'), mitr_b_best],
+        'mitr_c': [partial(get_mitr, region='C'), mitr_c_best],
+        'mitr': [partial(get_mitr, region='FULL'), mitr_best],
+        'chf': [get_chf, chf_best],
+        'rea': [get_rea, rea_best],
+        'xs': [get_xs, xs_best]
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     for model, info in datasets_dict.items():

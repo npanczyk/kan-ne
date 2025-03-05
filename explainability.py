@@ -5,25 +5,36 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 from sympy import symbols, sympify, lambdify
+from functools import partial
 
-def symbolic_FI(expr, X_test, Y_test, input_names, output_name, save_as, range=300):
-    num_vars = len(input_names)
-    s_expr = sympify(expr)
-    # equation as function with arg "inputs"
-    variables = symbols('x_1:%d' % (num_vars + 1))
-    print(variables)
-    compute_Y = lambdify([variables], s_expr)
-    # wrapper function, called model
-    model = lambda inputs: np.array([compute_Y(variables) for variables in inputs])
-    explainer = shap.KernelExplainer(model, X_test[0:range])
-    shap_values = explainer.shap_values(X_test[0:])
-    shap_mean = pd.DataFrame(np.abs(shap_values).mean(axis=0),columns=[output_name],index=input_names)
-    fig, ax = plt.subplots(figsize=(8,8))
-    df_mean_sorted = shap_mean.iloc[:, 0].sort_values(ascending=False)
-    print(df_mean_sorted)
-    ax.bar(df_mean_sorted.index, df_mean_sorted.iloc[:], capsize=4, width=0.3, color="lightseagreen")
+def symbolic_FI(equation_file, X_test, Y_test, input_names, output_names, save_as, shap_range=300):
+    shap_mean = []
+    n = len(output_names)
+    with open(equation_file) as file:
+        exprs = [file.readline() for line in range(n)]
+    for output, expr in zip(output_names, exprs):
+        num_vars = len(input_names)
+        # convert string into a sympy expression object
+        s_expr = sympify(expr)
+        # equation as function with arg "inputs"
+        variables = symbols('x_1:%d' % (num_vars + 1))
+        print(variables)
+        compute_Y = lambdify([variables], s_expr)
+        # wrapper function, called model
+        model = lambda inputs: np.array([compute_Y(variables) for variables in inputs])
+        explainer = shap.KernelExplainer(model, X_test[0:shap_range])
+        shap_values = explainer.shap_values(X_test[0:])
+        shap_mean.append(pd.DataFrame(np.abs(shap_values).mean(axis=0),columns=[output],index=input_names))
+    fig, ax = plt.subplots(figsize=(10,6))
+    x_positions = np.arange(len(input_names))
+    for i, df in enumerate(shap_mean):
+        df_mean = df.iloc[:, 0]
+        ax.bar(x_positions + i*0.2, df_mean.iloc[:], capsize=4, width=0.2, label=output_names[i])
     ax.set_ylabel("Mean of |SHAP Values|")
-    plt.xticks(rotation=90, ha="right") ## FIX THIS!
+    ax.legend(title='Output')
+    ax.grid(True, axis='y', linestyle='--', color='gray', alpha=0.7)
+    ax.set_xticks(x_positions + (n-1)*0.2/2)
+    ax.set_xticklabels(input_names, rotation=45)
     plt.tight_layout()
     if not os.path.exists('figures'):
         os.makedirs('figures')
@@ -32,15 +43,25 @@ def symbolic_FI(expr, X_test, Y_test, input_names, output_name, save_as, range=3
 
 if __name__=="__main__":
     # ACTIVATE SHAP-ENV BEFORE RUNNING
-    dataset = get_fp()
-    X_test = dataset['test_input'].detach().numpy()
-    Y_test = dataset['test_output'].detach().numpy()
-    input_names = dataset['feature_labels']
-    output_names = dataset['output_labels']
-    equation_file = 'equations/FP_2025-03-04.txt'
-    with open(equation_file) as file:
-        exprs = [file.readline() for i in range(len(output_names))]
-    print(len(exprs))
-    for output, expr in zip(output_names, exprs):
-        save_as = f'FP_03-04_shap_{output}'
-        symbolic_FI(expr, X_test, Y_test, input_names, output, save_as, range=10)
+    datasets_dict = {
+        'fp': [get_fp, 'equations/FP_2025-03-04.txt'],
+        'bwr': [get_bwr, 'equations/BWR_2025-03-05.txt'],
+        'heat': [get_heat, 'equations/HEAT_2025-03-05.txt'],
+        'htgr': [get_htgr, 'equations/HTGR_2025-03-05.txt'],
+        'mitr_a': [partial(get_mitr, region='A'), 'equations/MITR_A_2025-03-05.txt'],
+        'mitr_b': [partial(get_mitr, region='B'), 'equations/MITR_B_2025-03-05.txt'],
+        'mitr_c': [partial(get_mitr, region='C'), 'equations/MITR_C_2025-03-05.txt'],
+        'mitr': [partial(get_mitr, region='FULL'), 'equations/MITR_2025-03-05.txt'],
+        'chf': [get_chf, 'equations/CHF_2025-03-05.txt'],
+        'rea': [get_rea, 'equations/REA_2025-03-05.txt'],
+        'xs': [get_xs, 'equations/XS_2025-03-05.txt']
+    }
+    for model, info in datasets_dict.items():
+        dataset = info[0]
+        X_test = dataset['test_input'].detach().numpy()
+        Y_test = dataset['test_output'].detach().numpy()
+        input_names = dataset['feature_labels']
+        output_names = dataset['output_labels']
+        equation_file = info[1]
+        save_as = f"{model.upper()}_{str(dt.date.today())}_SHAP")
+        symbolic_FI(equation_file, X_test, Y_test, input_names, output_names, save_as, shap_range=10)
