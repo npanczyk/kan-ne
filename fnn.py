@@ -7,6 +7,7 @@ import os
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler, Normalizer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from accessories import *
+from explainability import *
 
 class FNN(nn.Module):
     def __init__(self, input_size, hidden_nodes, output_size):
@@ -24,6 +25,7 @@ class FNN(nn.Module):
         layers.append(nn.Linear(hidden_nodes[-1], output_size))
         # stick all the layers in the model
         self.model = nn.Sequential(*layers)
+        self.float()
 
     def forward(self, x):
         return self.model(x)
@@ -77,7 +79,7 @@ def fit_fnn(dataset, params, plot=False, save_as=None):
 
     # evaluate model performance
     y_preds, y_tests = get_metrics(model, test_loader, dataset['y_scaler'], save_as=save_as)
-    return
+    return model.cpu()
 
 def get_metrics(model, test_loader, scaler, save_as, p=5):
     model.eval()
@@ -130,6 +132,7 @@ def get_metrics(model, test_loader, scaler, save_as, p=5):
 
 if __name__=="__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    torch.set_default_dtype(torch.float64)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     dataset = get_htgr(cuda=True)
     params = {
@@ -138,4 +141,9 @@ if __name__=="__main__":
         'batch_size' : 8,
         'learning_rate' : 9e-4
     }
-    fit_fnn(dataset, params, plot=True, save_as='HTGR_fnn') 
+    X_test = dataset['test_input'].cpu().detach().numpy()
+    Y_test = dataset['test_output'].cpu().detach().numpy()
+    input_names = dataset['feature_labels']
+    output_names = dataset['output_labels']
+    model = fit_fnn(dataset, params, plot=True, save_as='HTGR_fnn')
+    fnn_FI(model, X_test, Y_test, input_names, output_names, save_as='HTGR_TEST', shap_range=10, width=0.2 ) 
