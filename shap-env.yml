@@ -1,0 +1,13 @@
+name: shap-env
+channels:
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+dependencies:
+  - shap
+  - sympy
+  - cpuonly
+  - torchaudio
+  - torchvision
+  - matplotlib
+  - xarray
+prefix: /home/npanczyk/miniconda3/envs/shap-env
