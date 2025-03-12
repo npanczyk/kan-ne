@@ -215,7 +215,36 @@ if __name__=="__main__":
             'dataset': get_xs            
         }
     }
-    for model, params in pymaise_params.items():
+    mitr_params = {
+        'mitr_a': {
+            'hidden_nodes' : [309],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0008321972582830564,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': partial(get_mitr, region='A')            
+        },
+        'mitr_b': {
+            'hidden_nodes' : [309],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0008321972582830564,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': partial(get_mitr, region='B')            
+        },
+        'mitr_c': {
+            'hidden_nodes' : [309],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0008321972582830564,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': partial(get_mitr, region='C')            
+        },        
+    }
+    for model, params in mitr_params.items():
         dataset = params['dataset'](cuda=True)
         X_test = dataset['test_input'].cpu().detach().numpy()
         Y_test = dataset['test_output'].cpu().detach().numpy()
