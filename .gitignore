@@ -175,4 +175,4 @@ scratch.ipynb
 hyperparameters/
 prune_success.txt
 old/
-.out
+*.out
