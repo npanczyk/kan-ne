@@ -8,9 +8,10 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler, RobustScaler, No
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from accessories import *
 from explainability import *
+from functools import partial
 
 class FNN(nn.Module):
-    def __init__(self, input_size, hidden_nodes, output_size):
+    def __init__(self, input_size, hidden_nodes, output_size, use_dropout=False, dropout_prob=0.5):
         super(FNN, self).__init__()
         layers = []
         # define input layer
@@ -21,6 +22,9 @@ class FNN(nn.Module):
             print(f'i: {i}, hidden_nodes[i-1]: {hidden_nodes[i-1]}, hidden_nodes[i]: {hidden_nodes[i]}')
             layers.append(nn.Linear(hidden_nodes[i-1], hidden_nodes[i]))
             layers.append(nn.ReLU())
+        # add a dropout layer if pymaise does for each model
+        if use_dropout:
+            layers.append(nn.Dropout(dropout_prob)) 
         # define output layer
         layers.append(nn.Linear(hidden_nodes[-1], output_size))
         # stick all the layers in the model
@@ -30,8 +34,9 @@ class FNN(nn.Module):
     def forward(self, x):
         return self.model(x)
 
-def fit_fnn(dataset, params, plot=False, save_as=None):
+def fit_fnn(params, plot=False, save_as=None):
     # define hyperparams
+    dataset = params['dataset'](cuda=True)
     input_size = dataset['train_input'].shape[1]
     print(f'Input Size: {input_size}')
     hidden_nodes = params['hidden_nodes']
@@ -40,6 +45,8 @@ def fit_fnn(dataset, params, plot=False, save_as=None):
     num_epochs = params['num_epochs']
     batch_size = params['batch_size']
     learning_rate = params['learning_rate']
+    use_dropout = params['use_dropout']
+    dropout_prob = params['dropout_prob']
 
     # get train and test data from dataset
     train_data = TensorDataset(dataset['train_input'], dataset['train_output'])
@@ -125,7 +132,7 @@ def get_metrics(model, test_loader, scaler, save_as, p=5):
     # check to see if there 
     if not os.path.exists('results'):
         os.makedirs('results')
-    metrics_df.to_csv(f'results/{save_as}.csv', index=False)
+    metrics_df.to_csv(f'results/{save_as}_FNN.csv', index=False)
 
     return y_preds, y_tests
 
@@ -134,16 +141,86 @@ if __name__=="__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="2"
     torch.set_default_dtype(torch.float64)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    dataset = get_htgr(cuda=True)
-    params = {
-        'hidden_nodes' : [437, 258, 101, 75, 35],
-        'num_epochs' : 200,
-        'batch_size' : 8,
-        'learning_rate' : 9e-4
+    pymaise_params = {
+        'chf': {
+            'hidden_nodes' : [231, 138, 267],
+            'num_epochs' : 200,
+            'batch_size' : 64,
+            'learning_rate' : 0.0009311391232267503,
+            'use_dropout': True,
+            'dropout_prob': 0.4995897609454529,
+            'dataset': get_chf
+        },
+        'bwr': {
+            'hidden_nodes' : [511, 367, 563, 441, 162],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0009660778027367906,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': get_bwr
+        },
+        'fp': {
+            'hidden_nodes' : [66, 400],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.001,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': get_fp
+        },
+        'heat': {
+            'hidden_nodes' : [251, 184, 47],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0008821712781015931,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': get_heat
+        },
+        'htgr': {
+            'hidden_nodes' : [199, 400],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.00011376283985074373,
+            'use_dropout': True,
+            'dropout_prob': 0.3225718287912892,
+            'dataset': get_htgr
+        },
+        'mitr': {
+            'hidden_nodes' : [309],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0008321972582830564,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': partial(get_mitr, region='FULL')            
+        },
+        'rea': {
+            'hidden_nodes' : [326, 127],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0009444837105276597,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': get_rea            
+        },
+        'xs': {
+            'hidden_nodes' : [95],
+            'num_epochs' : 200,
+            'batch_size' : 8,
+            'learning_rate' : 0.0003421585453407753,
+            'use_dropout': False,
+            'dropout_prob': 0,
+            'dataset': get_xs            
+        }
     }
-    X_test = dataset['test_input'].cpu().detach().numpy()
-    Y_test = dataset['test_output'].cpu().detach().numpy()
-    input_names = dataset['feature_labels']
-    output_names = dataset['output_labels']
-    model = fit_fnn(dataset, params, plot=True, save_as='HTGR_fnn')
-    fnn_FI(model, X_test, Y_test, input_names, output_names, save_as='HTGR_TEST', shap_range=10, width=0.2 ) 
+    for model, params in pymaise_params.items():
+        dataset = params['dataset'](cuda=True)
+        X_test = dataset['test_input'].cpu().detach().numpy()
+        Y_test = dataset['test_output'].cpu().detach().numpy()
+        input_names = dataset['feature_labels']
+        output_names = dataset['output_labels']
+        save_as = save_as = f"{model.upper()}_{str(dt.date.today())}"
+        model = fit_fnn(params, plot=True, save_as=save_as)
+        fnn_FI(model, X_test, Y_test, input_names, output_names, save_as=save_as, shap_range=300, width=0.2 ) 
