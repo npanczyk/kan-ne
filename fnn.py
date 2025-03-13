@@ -216,7 +216,7 @@ if __name__=="__main__":
         }
     }
     mitr_params = {
-        'mitr_a': {
+        'mitr_a_TEST': {
             'hidden_nodes' : [309],
             'num_epochs' : 200,
             'batch_size' : 8,
