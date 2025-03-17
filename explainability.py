@@ -66,28 +66,29 @@ def plot_kan_shap(path):
     ax.set_xticklabels(input_names, rotation=45)
     ax.set_yscale('log')
     plt.tight_layout()
-    if not os.path.exists('figures'):
-        os.makedirs('figures')
+    if not os.path.exists('figures/kan-shap'):
+        os.makedirs('figures/kan-shap')
     plt.savefig(f'figures/{save_as}_symbolic_FI.png', dpi=300)
     return fig, ax
 
-def fnn_shap(model, X_test, input_names, output_names, save_as, shap_range=300, width=0.2 ):
+def fnn_shap(model, X_train, X_test, input_names, output_names, save_as, k=50):
     """gets feature importances using kernel shap for an fnn
 
     Args:
         model (pytorch model obj): _description_
+        X_train (numpy array): 
         X_test (numpy array): _description_
         input_names (_type_): _description_
         output_names (_type_): _description_
         save_as (_type_): _description_
-        shap_range (int, optional): _description_. Defaults to 300.
-        width (float, optional): _description_. Defaults to 0.2.
+        k (int, optional): Number of means used for shap.kmeans approximation of training data. Defaults to 50.
 
     Returns:
         _type_: _description_
     """
     model_pred = lambda inputs: model(torch.tensor(inputs, dtype=torch.float32)).cpu().detach().numpy()
-    explainer = shap.KernelExplainer(model_pred, X_test[0:shap_range])
+    X_train_summary = shap.kmeans(X_train, k)
+    explainer = shap.KernelExplainer(model_pred, X_train_summary)
     shap_values = explainer.shap_values(X_test[0:])
     print(f'shap_values: {shap_values}')
     shap_mean = pd.DataFrame(np.abs(shap_values).mean(axis=0),columns=[output_names],index=input_names)
@@ -97,14 +98,27 @@ def fnn_shap(model, X_test, input_names, output_names, save_as, shap_range=300, 
     shap_mean.to_pickle(path)
     return path
 
-def plot_fnn_shap(path):
+def plot_fnn_shap(path, save_as, width=0.2):
+    """_summary_
+
+    Args:
+        path (_type_): _description_
+        save_as (_type_): _description_
+        width (float, optional): _description_. Defaults to 0.2.
+
+    Returns:
+        _type_: _description_
+    """
     shap_mean = pd.read_pickle(path)
     fig, ax = plt.subplots(figsize=(10,6))
     x_positions = np.arange(len(shap_mean.index))
-    output_names = df.columns
-    input_names = df.index
+    output_names = list(shap_mean.columns)
+    print(output_names)
+    input_names = list(shap_mean.index)
+    print(input_names)
     for i, col in enumerate(shap_mean.columns):
-        ax.bar(x_positions + i*width, shap_mean[col], capsize=4, width=width, label=col)
+        print(i, col)
+        ax.bar(x_positions + i*width, shap_mean[col], capsize=4, width=width, label=output_names[i])
     ax.set_ylabel("Mean of |SHAP Values|")
     ax.set_yscale('log')
     ax.legend(title='Output')
@@ -113,9 +127,9 @@ def plot_fnn_shap(path):
     ax.set_xticks(x_positions + (n-1)*width/2)
     ax.set_xticklabels(input_names, rotation=45)
     plt.tight_layout()
-    if not os.path.exists('figures'):
-        os.makedirs('figures')
-    plt.savefig(f'figures/{save_as}_fnn_FI.png', dpi=300)
+    if not os.path.exists('figures/fnn-shap'):
+        os.makedirs('figures/fnn-shap')
+    plt.savefig(f'figures/fnn-shap/{save_as}_fnn.png', dpi=300)
     return fig, ax
 
 if __name__=="__main__":
