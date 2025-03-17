@@ -84,11 +84,26 @@ def fit_fnn(params, plot=False, save_as=None):
         ax.set_xlabel('Epoch')
         plt.savefig(f'figures/fnn_loss_{save_as}.png', dpi=300)
 
+    # save model
+    path = f'models/{save_as}.pt'
+    torch.save(model.state_dict(), path)
     # evaluate model performance
-    y_preds, y_tests = get_metrics(model, test_loader, dataset['y_scaler'], save_as=save_as)
-    return model.cpu()
+    y_preds, y_tests = get_metrics(model, test_loader, dataset['y_scaler'], dataset, save_as=save_as)
+    return model.cpu(), path
 
-def get_metrics(model, test_loader, scaler, save_as, p=5):
+def get_metrics(model, test_loader, scaler, dataset, save_as, p=5):
+    """This function generates metrics on the original model training call, not with a loaded model.
+
+    Args:
+        model (pytorch model object): fnn model
+        test_loader (pytorch dataloader object): defined in fit_fnn()
+        scaler (sklearn scaler object): contained in dataset dictionary from preprocessing.py
+        save_as (str): dataset/model name
+        p (int, optional): Precision to save decimals to. Defaults to 5.
+
+    Returns:
+        tuple: (predicted y values, test y values)
+    """
     model.eval()
     y_preds = []
     y_tests = []
@@ -136,9 +151,54 @@ def get_metrics(model, test_loader, scaler, save_as, p=5):
 
     return y_preds, y_tests
 
+def get_fnn_models(params_dict):
+    """Gets metrics and saves trained fnn model objects.
+
+    Args:
+        params_dict (dict): keys = model name
+                            values = params dictionary
+    Returns:
+        dict: dictionary where keys are model names and values are a list containing get_dataset functions and paths to pytorch model objects (state_dict) for loading. You can feed this directly into get_fnn_shap()
+    """
+    model_paths = {}
+    for model, params in params_dict.items():
+        dataset = params['dataset'](cuda=True)
+        X_test = dataset['test_input'].cpu().detach().numpy()
+        Y_test = dataset['test_output'].cpu().detach().numpy()
+        input_names = dataset['feature_labels']
+        output_names = dataset['output_labels']
+        save_as = f"{model.upper()}_{str(dt.date.today())}"
+        path = fit_fnn(params, plot=True, save_as=save_as)[1]
+        model_paths[model] = [params['dataset'], path]
+    return model_paths
+
+def get_fnn_shap(models_dict):
+    """Loads dataset and model and calculates kernel shap values. 
+
+    Args:
+        models_dict (dict): key = model name (chf, htgr, etc.),
+                            values[0] = get_dataset
+                            values[1] = model object path
+    """
+    shap_paths = {}
+    for key, values in models_dict.items():
+        dataset = values[0](cuda=True)
+        X_test = dataset['test_input'].cpu().detach().numpy()
+        Y_test = dataset['test_output'].cpu().detach().numpy()
+        input_names = dataset['feature_labels']
+        output_names = dataset['output_labels']
+        save_as =  f"{key.upper()}_{str(dt.date.today())}"
+        # PAUSED HERE!!! NEED TO FEED MODEL ARGS TO THIS FUNCTION
+        model = FNN(input_size, hidden_nodes, output_size).to(device)
+        model = FNN(*args, **kwargs)
+        model.load_state_dict(torch.load(values[1], weights_only=True))
+        model.eval()
+        path = fnn_shap(model, X_test, Y_test, input_names, output_names, save_as=save_as, shap_range=300, width=0.2 )
+        shap_paths[model] = path
+    return shap_paths
 
 if __name__=="__main__":
-    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+    os.environ["CUDA_VISIBLE_DEVICES"]="1"
     torch.set_default_dtype(torch.float64)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     pymaise_params = {
@@ -213,10 +273,8 @@ if __name__=="__main__":
             'use_dropout': False,
             'dropout_prob': 0,
             'dataset': get_xs            
-        }
-    }
-    mitr_params = {
-        'mitr_a_TEST': {
+        },
+        'mitr_a': {
             'hidden_nodes' : [309],
             'num_epochs' : 200,
             'batch_size' : 8,
@@ -244,12 +302,20 @@ if __name__=="__main__":
             'dataset': partial(get_mitr, region='C')            
         },        
     }
-    for model, params in mitr_params.items():
-        dataset = params['dataset'](cuda=True)
-        X_test = dataset['test_input'].cpu().detach().numpy()
-        Y_test = dataset['test_output'].cpu().detach().numpy()
-        input_names = dataset['feature_labels']
-        output_names = dataset['output_labels']
-        save_as = save_as = f"{model.upper()}_{str(dt.date.today())}"
-        model = fit_fnn(params, plot=True, save_as=save_as)
-        fnn_FI(model, X_test, Y_test, input_names, output_names, save_as=save_as, shap_range=300, width=0.2 ) 
+    # # uncomment to train FNN models
+    # get_fnn_models(pymaise_params)
+    path_dict = {
+        'chf': [get_chf, 'models/CHF_2025-03-17.pt'],
+        'bwr': [get_bwr, 'models/BWR_2025-03-17.pt'], 
+        'fp': [get_fp, 'models/FP_2025-03-17.pt'], 
+        'heat': [get_heat, 'models/HEAT_2025-03-17.pt'], 
+        'htgr': [get_htgr, 'models/HTGR_2025-03-17.pt'], 
+        'mitr': [partial(get_mitr, region='FULL'), 'models/MITR_2025-03-17.pt'], 
+        'rea': [get_rea, 'models/REA_2025-03-17.pt'], 
+        'xs': [get_xs, 'models/XS_2025-03-17.pt'], 
+        'mitr_a': [partial(get_mitr, region='A'), 'models/MITR_A_2025-03-17.pt'], 
+        'mitr_b': [partial(get_mitr, region='B'), 'models/MITR_B_2025-03-17.pt'], 
+        'mitr_c': [partial(get_mitr, region='C'), 'models/MITR_C_2025-03-17.pt']}
+    shap_paths = get_fnn_shap(path_dict)
+    print(shap_paths)
+ 
