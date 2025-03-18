@@ -24,7 +24,7 @@ def kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as,
     Returns:
         tuple: fig, ax
     """
-    shap_mean = []
+    shap_mean_list = []
     n = len(output_names)
     with open(equation_file) as file:
         exprs = [file.readline() for line in range(n)]
@@ -41,17 +41,18 @@ def kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as,
         X_train_summary = shap.kmeans(X_train, k)
         explainer = shap.KernelExplainer(model, X_train_summary)
         shap_values = explainer.shap_values(X_test[0:])
-        print(f'shap_values: {shap_values}')
         # remove nan values from array (this is only necessary for MITR-A)
         # equation has a maybe negative number raised to a fractional power
         # this throws an error, so we drop these cases
         shap_values = shap_values[~np.isnan(shap_values).any(axis=1)]
-        shap_mean.append(pd.DataFrame(np.abs(shap_values).mean(axis=0),columns=[output],index=input_names))
-        if not os.path.exists('shap-values'):
-            os.makedirs('shap-values')
-        path = f'shap-values/{save_as}_kan_{str(dt.date.today())}.pkl'
-        shap_mean.to_pickle(path)
-        return path
+        shap_mean_list.append(pd.DataFrame(np.abs(shap_values).mean(axis=0),columns=[output],index=input_names))
+    shap_mean = pd.concat(shap_mean_list, axis=1)
+    print(shap_mean)
+    if not os.path.exists('shap-values'):
+        os.makedirs('shap-values')
+    path = f'shap-values/{save_as}_kan_{str(dt.date.today())}.pkl'
+    shap_mean.to_pickle(path)
+    return path
 
 def plot_kan_shap(path):
     shap_mean = pd.read_pickle(path)
@@ -163,5 +164,5 @@ if __name__=="__main__":
         k = int(np.round(0.005*train_samples*input_size))
         if k > 100:
             k = 100
-        save_as = f"{model.upper()}_{str(dt.date.today())}"
-        symbolic_FI(equation_file, X_train, X_test, input_names, output_names, save_as, k=k, width=0.2)
+        save_as = f"{model.upper()}"
+        kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as, k=k, width=0.2)
