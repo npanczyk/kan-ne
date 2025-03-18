@@ -139,8 +139,6 @@ class NKAN():
         metrics_df.to_csv(f'results/{save_as}.csv', index=False)
         return metrics_df
 
-    def get_schematic():
-        return 
 
     def get_equation(self, model, save_as, simple=0.8, lib=None):
         """Converts splines into symbolic functions for the model object. Saves symbolic functions for each output to a text file under /equations. If metrics, calculates and saves symbolic metrics to a file under /results.

@@ -23,7 +23,6 @@ def run_model(device, dataset, params, run_name, lib=None):
     model = kan.get_model()
     spline_metrics = kan.get_metrics(model, run_name)
     equation = kan.get_equation(model, run_name, simple=0, lib=None)
-    importances = kan.get_importances(model, run_name)
     return
 
 

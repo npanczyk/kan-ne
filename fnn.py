@@ -188,7 +188,7 @@ def get_fnn_shap(models_dict, params_dict, device):
         X_test = dataset['test_input'].cpu().detach().numpy()
         input_names = dataset['feature_labels']
         output_names = dataset['output_labels']
-        save_as =  f"{key.upper()}_{str(dt.date.today())}"
+        save_as =  f"{key.upper()}"
         # feed model args
         input_size = dataset['train_input'].shape[1]
         hidden_nodes = params['hidden_nodes']
@@ -196,7 +196,11 @@ def get_fnn_shap(models_dict, params_dict, device):
         model = FNN(input_size, hidden_nodes, output_size)
         model.load_state_dict(torch.load(values[1], weights_only=True))
         model.eval()
-        path = fnn_shap(model, X_train, X_test, input_names, output_names, save_as=save_as, k=10, width=0.2 )
+        train_samples = dataset['train_input'].shape[0]
+        k = int(np.round(0.005*train_samples*input_size))
+        if k > 100:
+            k = 100
+        path = fnn_shap(model, X_train, X_test, input_names, output_names, save_as=save_as, k=k)
         shap_paths[key] = path
     return shap_paths
 
@@ -308,37 +312,25 @@ if __name__=="__main__":
     # # uncomment to train FNN models
     # get_fnn_models(pymaise_params)
 
-    # # uncomment to get shap values from FNN models
-    # model_path_dict = {
-    #     'chf': [get_chf, 'models/CHF_2025-03-17.pt'],
-    #     'bwr': [get_bwr, 'models/BWR_2025-03-17.pt'], 
-    #     'fp': [get_fp, 'models/FP_2025-03-17.pt'], 
-    #     'heat': [get_heat, 'models/HEAT_2025-03-17.pt'], 
-    #     'htgr': [get_htgr, 'models/HTGR_2025-03-17.pt'], 
-    #     'mitr': [partial(get_mitr, region='FULL'), 'models/MITR_2025-03-17.pt'], 
-    #     'rea': [get_rea, 'models/REA_2025-03-17.pt'], 
-    #     'xs': [get_xs, 'models/XS_2025-03-17.pt'], 
-    #     'mitr_a': [partial(get_mitr, region='A'), 'models/MITR_A_2025-03-17.pt'], 
-    #     'mitr_b': [partial(get_mitr, region='B'), 'models/MITR_B_2025-03-17.pt'], 
-    #     'mitr_c': [partial(get_mitr, region='C'), 'models/MITR_C_2025-03-17.pt']}
+    # uncomment to get shap values from FNN models
+    model_path_dict = {
+        'chf': [get_chf, 'models/CHF_2025-03-17.pt'],
+        'bwr': [get_bwr, 'models/BWR_2025-03-17.pt'], 
+        'fp': [get_fp, 'models/FP_2025-03-17.pt'], 
+        'heat': [get_heat, 'models/HEAT_2025-03-17.pt'], 
+        'htgr': [get_htgr, 'models/HTGR_2025-03-17.pt'], 
+        'mitr': [partial(get_mitr, region='FULL'), 'models/MITR_2025-03-17.pt'], 
+        'rea': [get_rea, 'models/REA_2025-03-17.pt'], 
+        'xs': [get_xs, 'models/XS_2025-03-17.pt'], 
+        'mitr_a': [partial(get_mitr, region='A'), 'models/MITR_A_2025-03-17.pt'], 
+        'mitr_b': [partial(get_mitr, region='B'), 'models/MITR_B_2025-03-17.pt'], 
+        'mitr_c': [partial(get_mitr, region='C'), 'models/MITR_C_2025-03-17.pt']}
     # shap_paths = get_fnn_shap(model_path_dict, pymaise_params, device)
     # print(shap_paths)
 
     # # uncomment to plot shap values
 
-    shap_path_dict = {
-        'chf': 'shap-values/CHF_2025-03-17_fnn_2025-03-17.pkl', 
-        'bwr': 'shap-values/BWR_2025-03-17_fnn_2025-03-17.pkl', 
-        'fp': 'shap-values/FP_2025-03-17_fnn_2025-03-17.pkl', 
-        'heat': 'shap-values/HEAT_2025-03-17_fnn_2025-03-17.pkl', 
-        'htgr': 'shap-values/HTGR_2025-03-17_fnn_2025-03-17.pkl', 
-        'mitr': 'shap-values/MITR_2025-03-17_fnn_2025-03-17.pkl', 
-        'rea': 'shap-values/REA_2025-03-17_fnn_2025-03-17.pkl', 
-        'xs': 'shap-values/XS_2025-03-17_fnn_2025-03-17.pkl', 
-        'mitr_a': 'shap-values/MITR_A_2025-03-17_fnn_2025-03-17.pkl', 
-        'mitr_b': 'shap-values/MITR_B_2025-03-17_fnn_2025-03-17.pkl', 
-        'mitr_c': 'shap-values/MITR_C_2025-03-17_fnn_2025-03-17.pkl'
-        }
+    shap_path_dict = {'chf': 'shap-values/CHF_fnn_2025-03-18.pkl', 'bwr': 'shap-values/BWR_fnn_2025-03-18.pkl', 'fp': 'shap-values/FP_fnn_2025-03-18.pkl', 'heat': 'shap-values/HEAT_fnn_2025-03-18.pkl', 'htgr': 'shap-values/HTGR_fnn_2025-03-18.pkl', 'mitr': 'shap-values/MITR_fnn_2025-03-18.pkl', 'rea': 'shap-values/REA_fnn_2025-03-18.pkl', 'xs': 'shap-values/XS_fnn_2025-03-18.pkl', 'mitr_a': 'shap-values/MITR_A_fnn_2025-03-18.pkl', 'mitr_b': 'shap-values/MITR_B_fnn_2025-03-18.pkl', 'mitr_c': 'shap-values/MITR_C_fnn_2025-03-18.pkl'}
     for model, path in shap_path_dict.items():
         plot_fnn_shap(path, save_as=model)
  
