@@ -54,24 +54,24 @@ def kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as,
     shap_mean.to_pickle(path)
     return path
 
-def plot_kan_shap(path):
-    shap_mean = pd.read_pickle(path)
-    fig, ax = plt.subplots(figsize=(10,6))
-    x_positions = np.arange(len(input_names))
-    for i, df in enumerate(shap_mean):
-        df_mean = df.iloc[:, 0]
-        ax.bar(x_positions + i*width, df_mean.iloc[:], capsize=4, width=width, label=output_names[i])
-    ax.set_ylabel("Mean of |SHAP Values|")
-    ax.legend(title='Output')
-    ax.grid(True, axis='y', linestyle='--', color='gray', alpha=0.7)
-    ax.set_xticks(x_positions + (n-1)*width/2)
-    ax.set_xticklabels(input_names, rotation=45)
-    ax.set_yscale('log')
-    plt.tight_layout()
-    if not os.path.exists('figures/kan-shap'):
-        os.makedirs('figures/kan-shap')
-    plt.savefig(f'figures/kan-shap/{save_as}_kan.png', dpi=300)
-    return fig, ax
+def get_kan_shap(datasets_dict):
+    shap_paths = {}
+    for model, info in datasets_dict.items():
+        dataset = info[0](cuda=False)
+        X_test = dataset['test_input'].detach().numpy()
+        X_train = dataset['train_input'].detach().numpy()
+        input_names = dataset['feature_labels']
+        output_names = dataset['output_labels']
+        equation_file = info[1]
+        train_samples = X_train.shape[0]
+        input_size = X_train.shape[1]
+        k = int(np.round(0.005*train_samples*input_size))
+        if k > 100:
+            k = 100
+        save_as = f"{model.upper()}"
+        path = kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as, k=k, width=0.2)
+        shap_paths[model] = path
+    return shap_paths
 
 def fnn_shap(model, X_train, X_test, input_names, output_names, save_as, k=50):
     """gets feature importances using kernel shap for an fnn
@@ -107,16 +107,17 @@ def fnn_shap(model, X_train, X_test, input_names, output_names, save_as, k=50):
     plt.savefig(f'figures/fnn-shap/{save_as}_KCHECK.png', dpi=300)
     return path
 
-def plot_fnn_shap(path, save_as, width=0.2):
+def plot_shap(path, save_as, type='kan', width=0.2):
     """_summary_
 
     Args:
-        path (_type_): _description_
-        save_as (_type_): _description_
-        width (float, optional): _description_. Defaults to 0.2.
+        path (str): path to shap values file
+        save_as (str): name of run
+        type (str, optional): Model type, either fnn or kan. Defaults to 'kan'.
+        width (float, optional): Width of plotted bars. Defaults to 0.2.
 
     Returns:
-        _type_: _description_
+        tuple: (fig, ax) matplotlib objects
     """
     shap_mean = pd.read_pickle(path)
     fig, ax = plt.subplots(figsize=(10,6))
@@ -124,7 +125,12 @@ def plot_fnn_shap(path, save_as, width=0.2):
     output_names = list(shap_mean.columns)
     input_names = list(shap_mean.index)
     for i, col in enumerate(shap_mean.columns):
-        ax.bar(x_positions + i*width, shap_mean[col], capsize=4, width=width, label=output_names[i][0])
+        # very stupid label thing but it has to do with a list of tuples for fnn
+        if type.upper()=='FNN':
+            label = output_names[i][0]
+        else:
+            label = output_names[i]
+        ax.bar(x_positions + i*width, shap_mean[col], capsize=4, width=width, label=label)
     ax.set_ylabel("Mean of |SHAP Values|")
     ax.set_yscale('log')
     ax.legend(title='Output')
@@ -133,9 +139,9 @@ def plot_fnn_shap(path, save_as, width=0.2):
     ax.set_xticks(x_positions + (n-1)*width/2)
     ax.set_xticklabels(input_names, rotation=45)
     plt.tight_layout()
-    if not os.path.exists('figures/fnn-shap'):
-        os.makedirs('figures/fnn-shap')
-    plt.savefig(f'figures/fnn-shap/{save_as}_fnn.png', dpi=300)
+    if not os.path.exists('figures/shap'):
+        os.makedirs('figures/shap')
+    plt.savefig(f'figures/shap/{save_as}.png', dpi=300)
     return fig, ax
 
 if __name__=="__main__":
@@ -152,17 +158,25 @@ if __name__=="__main__":
         'rea': [get_rea, 'equations/REA_2025-03-05.txt'],
         'xs': [get_xs, 'equations/XS_2025-03-05.txt']
     }
-    for model, info in datasets_dict.items():
-        dataset = info[0](cuda=False)
-        X_test = dataset['test_input'].detach().numpy()
-        X_train = dataset['train_input'].detach().numpy()
-        input_names = dataset['feature_labels']
-        output_names = dataset['output_labels']
-        equation_file = info[1]
-        train_samples = X_train.shape[0]
-        input_size = X_train.shape[1]
-        k = int(np.round(0.005*train_samples*input_size))
-        if k > 100:
-            k = 100
-        save_as = f"{model.upper()}"
-        kan_shap(equation_file, X_train, X_test, input_names, output_names, save_as, k=k, width=0.2)
+
+    shap_path_dict = {
+        'fp': 'shap-values/FP_kan_2025-03-18.pkl', 
+        'bwr': 'shap-values/BWR_kan_2025-03-18.pkl', 
+        'heat': 'shap-values/HEAT_kan_2025-03-18.pkl', 
+        'htgr': 'shap-values/HTGR_kan_2025-03-18.pkl', 
+        'mitr_a': 'shap-values/MITR_A_kan_2025-03-18.pkl', 
+        'mitr_b': 'shap-values/MITR_B_kan_2025-03-18.pkl', 
+        'mitr_c': 'shap-values/MITR_C_kan_2025-03-18.pkl', 
+        'mitr': 'shap-values/MITR_kan_2025-03-18.pkl', 
+        'chf': 'shap-values/CHF_kan_2025-03-18.pkl', 
+        'rea': 'shap-values/REA_kan_2025-03-18.pkl', 
+        'xs': 'shap-values/XS_kan_2025-03-18.pkl'
+        }
+
+    # # uncomment to calculate kan shap values
+    # paths_dict = get_kan_shap(datasets_dict)
+    # print(paths_dict)
+
+    for model, path in shap_path_dict.items():
+        plot_shap(path, save_as=f'{model}_kan', type='kan', width=0.1)
+    # widths: bwr: 0.15, mitr b, c, and full: 0.1, rest: 0.2
