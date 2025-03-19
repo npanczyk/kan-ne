@@ -4,6 +4,7 @@ from sympy import symbols, sympify, lambdify
 import torch
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 torch.set_default_dtype(torch.float64)
+import os
 
 def rmspe(ytest, ypred):
     """Generates root mean square percentage error.
@@ -118,3 +119,12 @@ def metrics(output_labels, y_test, y_pred, p):
         metrics['RMSPE'].append(round(rmspe(yi_test, yi_pred), p))
         metrics['R2'].append(round(r2_score(yi_test, yi_pred),p))
     return pd.DataFrame.from_dict(metrics)
+
+def print_shap(path, save_as, type):
+    df = pd.read_pickle(path)
+    if not os.path.exists('shap-values/'):
+        os.makedirs('shap-values')
+    df.to_csv(f'shap-values/{save_as}_{type}.csv')
+    to_latex = df.to_latex(float_format="%.5f", index=True, longtable=True, caption=f'Absolute value of mean SHAP values for {type.upper()} model of {save_as.upper()} dataset.')
+    print(to_latex)
+    return 

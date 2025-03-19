@@ -1,4 +1,5 @@
 from preprocessing import *
+from accessories import print_shap
 import shap
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -135,7 +136,7 @@ def plot_shap(path, save_as, type='kan', width=0.2):
     ax.set_yscale('log')
     ax.legend(title='Output')
     n = len(output_names)
-    ax.grid(True, axis='y', linestyle='--', color='gray', alpha=0.7)
+    ax.grid(True, which='both', axis='y', linestyle='--', color='gray', alpha=0.5)
     ax.set_xticks(x_positions + (n-1)*width/2)
     ax.set_xticklabels(input_names, rotation=45)
     plt.tight_layout()
@@ -177,6 +178,11 @@ if __name__=="__main__":
     # paths_dict = get_kan_shap(datasets_dict)
     # print(paths_dict)
 
+    ## uncomment to make shap kan plots
     for model, path in shap_path_dict.items():
-        plot_shap(path, save_as=f'{model}_kan', type='kan', width=0.1)
-    # widths: bwr: 0.15, mitr b, c, and full: 0.1, rest: 0.2
+        plot_shap(path, save_as=f'{model}_kan', type='kan', width=0.15)
+
+    ## uncomment to print shap values
+    # for model, path in shap_path_dict.items():
+    #     print_shap(path, save_as=f'{model}', type='kan')
+
