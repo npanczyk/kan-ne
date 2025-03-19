@@ -344,10 +344,10 @@ if __name__=="__main__":
     # print(shap_paths)
 
     # # uncomment to plot shap values
-    # for model, path in shap_path_dict.items():
-    #     plot_shap(path, save_as=f'{model}_fnn', type='fnn')
-
-    ## uncomment to print shap values
     for model, path in shap_path_dict.items():
-        print_shap(path, save_as=f'{model}', type='fnn')
+        plot_shap(path, save_as=f'{model}_fnn', type='fnn', width=0.2)
+
+    # ## uncomment to print shap values
+    # for model, path in shap_path_dict.items():
+    #     print_shap(path, save_as=f'{model}', type='fnn')
  
