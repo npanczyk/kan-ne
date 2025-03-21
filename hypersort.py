@@ -85,6 +85,16 @@ def get_top(datasets_dict):
     return top_df
 
 def merge_metrics(name, kan, fnn):
+    """Merges KAN and FNN metrics for the same dataset to put in a Latex table for final report.
+
+    Args:
+        name (str): Dataset name/model name
+        kan (str): File path with stored KAN metrics
+        fnn (str): File path with stored FNN metrics
+
+    Returns:
+        pandas DataFrame: merged dataframe containing KAN and FNN metrics
+    """
     kan_df = pd.read_csv(kan)
     kan_df['MODEL'] = 'KAN'
     fnn_df = pd.read_csv(fnn)
@@ -115,17 +125,17 @@ if __name__=="__main__":
         'xs': 'best_hyperparams/symbolic/XS_2025-03-02'
     }
     results_dict = {
-    # 'fp': ['results/FP_2025-03-04_symetrics.csv','results/FP_2025-03-11_FNN.csv'],
+    'fp': ['results/FP_2025-03-04_symetrics.csv','results/FP_2025-03-11_FNN.csv'],
     'bwr': ['results/BWR_2025-03-05_symetrics.csv', 'results/BWR_2025-03-11_FNN.csv'],
     'heat': ['results/HEAT_2025-03-05_symetrics.csv', 'results/HEAT_2025-03-11_FNN.csv'],
-    # 'htgr': ['results/HTGR_2025-03-05_symetrics.csv', 'results/HTGR_2025-03-11_FNN.csv'],
-    # 'mitr_a': ['results/MITR_A_2025-03-05_symetrics.csv','results/MITR_A_2025-03-12_FNN.csv'],
-    # 'mitr_b': ['results/MITR_B_2025-03-05_symetrics.csv','results/MITR_B_2025-03-12_FNN.csv'],
-    # 'mitr_c': ['results/MITR_C_2025-03-05_symetrics.csv','results/MITR_C_2025-03-12_FNN.csv'],
-    # 'mitr': ['results/MITR_2025-03-05_symetrics.csv','results/MITR_2025-03-11_FNN.csv'],
+    'htgr': ['results/HTGR_2025-03-05_symetrics.csv', 'results/HTGR_2025-03-11_FNN.csv'],
+    'mitr_a': ['results/MITR_A_2025-03-05_symetrics.csv','results/MITR_A_2025-03-12_FNN.csv'],
+    'mitr_b': ['results/MITR_B_2025-03-05_symetrics.csv','results/MITR_B_2025-03-12_FNN.csv'],
+    'mitr_c': ['results/MITR_C_2025-03-05_symetrics.csv','results/MITR_C_2025-03-12_FNN.csv'],
+    'mitr': ['results/MITR_2025-03-05_symetrics.csv','results/MITR_2025-03-11_FNN.csv'],
     'chf': ['results/CHF_2025-03-05_symetrics.csv', 'results/CHF_2025-03-11_FNN.csv'],
-    # 'rea': ['results/REA_2025-03-05_symetrics.csv', 'results/REA_2025-03-11_FNN.csv'],
-    # 'xs': ['results/XS_2025-03-05_symetrics.csv', 'results/XS_2025-03-11_FNN.csv']
+    'rea': ['results/REA_2025-03-05_symetrics.csv', 'results/REA_2025-03-11_FNN.csv'],
+    'xs': ['results/XS_2025-03-05_symetrics.csv', 'results/XS_2025-03-11_FNN.csv']
     }
     space = {
         "depth": ["hp.choice", [1, 2, 3, 4]],

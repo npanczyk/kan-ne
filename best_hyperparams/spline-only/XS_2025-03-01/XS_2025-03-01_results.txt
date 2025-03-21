@@ -1,1 +1,0 @@
-{'depth': 0, 'grid': 1, 'k': 1, 'lamb': 1.4823678477236053e-06, 'lamb_entropy': 1.672017110498797, 'lr_1': 6, 'lr_2': 0, 'reg_metric': 1, 'steps': 0}

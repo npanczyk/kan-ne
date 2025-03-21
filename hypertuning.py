@@ -15,6 +15,8 @@ torch.set_default_dtype(torch.float64)
 
 ########################  TUNER CLASS ###########################
 class Tuner():
+    """Tuner objects pair objective functions to a dataset to feed into hyperopt tuning procedure.
+    """
     def __init__(self, dataset, run_name, space, max_evals, seed, device, symbolic=False):
         self.dataset = dataset
         self.run_name = run_name
@@ -204,6 +206,11 @@ def tune(obj, space, max_evals, algorithm=None):
 ##################### TUNING INDIVIDUAL DATASETS #####################
 
 def tune_case(tuner):
+    """Runs the hyperopt tuner and saves the best results for that case under the /hyperparameters directory. 
+
+    Args:
+        tuner (Tuner object): Tuner object defined by a specific dataset and hyperparameter space dictionary.
+    """
     best, trials = tune(
                     obj=tuner.objective, 
                     space=tuner.space, 
@@ -216,13 +223,19 @@ def tune_case(tuner):
 
 if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"]="1"
-    # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT RUN NAME!
+    # WARNING: DEFINING TUNER OBJECT WILL DELETE FILES WITH THAT EXACT RUN NAME!
     datasets_dict = {
         'htgr': get_htgr,
         'xs': get_xs,
         'bwr': get_bwr,
-        'rea': get_rea
+        'rea': get_rea,
+        'chf': get_chf,
+        'fp': get_fp,
+        'heat': get_heat,
     }
+    regions = ['A', 'B', 'C', 'FULL']
+    for region in regions:
+        datasets_dict[f'mitr_{region}'] = partial(get_mitr, region=region)
     for model, dataset in datasets_dict.items():
         print(f'MODEL: {model}')    
         tuner = Tuner(
