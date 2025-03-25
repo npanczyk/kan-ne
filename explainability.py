@@ -175,12 +175,12 @@ if __name__=="__main__":
         }
 
     # # uncomment to calculate kan shap values
-    # paths_dict = get_kan_shap(datasets_dict)
-    # print(paths_dict)
+    paths_dict = get_kan_shap(datasets_dict)
+    print(paths_dict)
 
     ## uncomment to make shap kan plots
-    for model, path in shap_path_dict.items():
-        plot_shap(path, save_as=f'{model}_kan', type='kan', width=0.15)
+    # for model, path in shap_path_dict.items():
+    #     plot_shap(path, save_as=f'{model}_kan', type='kan', width=0.15)
 
     ## uncomment to print shap values
     # for model, path in shap_path_dict.items():

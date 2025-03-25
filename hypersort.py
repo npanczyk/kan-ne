@@ -148,10 +148,10 @@ if __name__=="__main__":
         "lr_2": ["hp.choice", [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]],
     }
     # # To generate all results, uncomment and run lines below:
-    # get_top(hyperparams_dict)
-    # for key in hyperparams_dict.keys()
-    #     sort_params(hyperparams_dict[key])
-    # print_space(space)
+    get_top(hyperparams_dict)
+    for key in hyperparams_dict.keys()
+        sort_params(hyperparams_dict[key])
+    print_space(space)
     for name, files in results_dict.items():
         merge_metrics(name, files[0], files[1])
 

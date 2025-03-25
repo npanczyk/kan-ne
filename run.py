@@ -6,6 +6,8 @@ from kan import *
 import datetime as dt
 from functools import partial
 
+# best KAN hyperparameters from hypertuning results
+
 fp_best = {'depth': 1, 'grid': 8, 'k': 7, 'lamb': 2.0426962767412815e-05, 'lamb_entropy': 5.0346373804560525, 'lr_1': 1.5, 'lr_2': 1.75, 'reg_metric': 'edge_forward_sum', 'steps': 75}
 bwr_best = {'depth': 1, 'grid': 7, 'k': 2, 'lamb': 0.0008912210456241697, 'lamb_entropy': 7.488094627223641, 'lr_1': 1.75, 'lr_2': 1.25, 'reg_metric': 'edge_forward_sum', 'steps': 125}
 heat_best = {'depth': 1, 'grid': 7, 'k': 3, 'lamb': 0.00018986520634595234, 'lamb_entropy': 8.209205342922996, 'lr_1': 1.5, 'lr_2': 2, 'reg_metric': 'edge_forward_spline_u', 'steps': 150}

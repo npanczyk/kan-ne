@@ -336,18 +336,18 @@ if __name__=="__main__":
         'mitr_c': 'shap-values/MITR_C_fnn_2025-03-18.pkl'
         }
 
-    # # uncomment to train FNN models and get metrics
-    # get_fnn_models(pymaise_params)
+    # STEP 1: train FNN models and get metrics
+    get_fnn_models(pymaise_params)
 
-    # uncomment to get shap values from FNN models
+    # # STEP 2: get shap values from FNN models, need model path dict from Step 1
     # shap_paths = get_fnn_shap(model_path_dict, pymaise_params, device)
     # print(shap_paths)
 
-    # # uncomment to plot shap values
-    for model, path in shap_path_dict.items():
-        plot_shap(path, save_as=f'{model}_fnn', type='fnn', width=0.2)
+    # # STEP 3: plot shap values, need shap path dict from Step 2
+    # for model, path in shap_path_dict.items():
+    #     plot_shap(path, save_as=f'{model}_fnn', type='fnn', width=0.2)
 
-    # ## uncomment to print shap values
+    # # STEP 4 (optional): print shap values and save to csv
     # for model, path in shap_path_dict.items():
     #     print_shap(path, save_as=f'{model}', type='fnn')
  
