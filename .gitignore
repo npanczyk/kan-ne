@@ -176,3 +176,4 @@ hyperparameters/
 prune_success.txt
 old/
 *.out
+.snakemake
